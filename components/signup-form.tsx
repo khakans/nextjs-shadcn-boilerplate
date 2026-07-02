@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { GoogleAuthButton } from "@/components/google-auth-button"
+import { getMessages } from "@/lib/i18n"
+import { useLanguagePreference } from "@/lib/theme"
 import {
   Field,
   FieldDescription,
@@ -21,6 +23,8 @@ export function SignupForm({
   ...props
 }: Omit<React.ComponentProps<"form">, "onSubmit">) {
   const router = useRouter()
+  const { language } = useLanguagePreference()
+  const t = getMessages(language)
   const [error, setError] = React.useState<string | null>(null)
   const [isPending, setIsPending] = React.useState(false)
 
@@ -33,7 +37,7 @@ export function SignupForm({
     const confirmPassword = String(formData.get("confirmPassword") ?? "")
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.")
+      setError(t.passwordConfirmationMismatch)
       return
     }
 
@@ -55,7 +59,7 @@ export function SignupForm({
     setIsPending(false)
 
     if (!response.ok) {
-      setError(payload?.error ?? "Unable to create account.")
+      setError(payload?.error ?? t.signupFailed)
       return
     }
 
@@ -71,39 +75,38 @@ export function SignupForm({
     >
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
-          <h1 className="text-2xl font-bold">Create your account</h1>
+          <h1 className="text-2xl font-bold">{t.signupTitle}</h1>
           <p className="text-sm text-balance text-muted-foreground">
-            Fill in the form below to create your account
+            {t.signupDescription}
           </p>
         </div>
         <Field>
-          <FieldLabel htmlFor="name">Full Name</FieldLabel>
+          <FieldLabel htmlFor="name">{t.fullName}</FieldLabel>
           <Input
             id="name"
             name="name"
             type="text"
-            placeholder="John Doe"
+            placeholder={t.fullNamePlaceholder}
             required
             className="bg-background"
           />
         </Field>
         <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <FieldLabel htmlFor="email">{t.email}</FieldLabel>
           <Input
             id="email"
             name="email"
             type="email"
-            placeholder="m@example.com"
+            placeholder={t.emailPlaceholder}
             required
             className="bg-background"
           />
           <FieldDescription>
-            We&apos;ll use this to contact you. We will not share your email
-            with anyone else.
+            {t.signupEmailDescription}
           </FieldDescription>
         </Field>
         <Field>
-          <FieldLabel htmlFor="password">Password</FieldLabel>
+          <FieldLabel htmlFor="password">{t.password}</FieldLabel>
           <Input
             id="password"
             name="password"
@@ -112,11 +115,11 @@ export function SignupForm({
             className="bg-background"
           />
           <FieldDescription>
-            Must be at least 8 characters long.
+            {t.signupPasswordDescription}
           </FieldDescription>
         </Field>
         <Field>
-          <FieldLabel htmlFor="confirm-password">Confirm Password</FieldLabel>
+          <FieldLabel htmlFor="confirm-password">{t.confirmPassword}</FieldLabel>
           <Input
             id="confirm-password"
             name="confirmPassword"
@@ -124,7 +127,7 @@ export function SignupForm({
             required
             className="bg-background"
           />
-          <FieldDescription>Please confirm your password.</FieldDescription>
+          <FieldDescription>{t.confirmPasswordDescription}</FieldDescription>
         </Field>
         {error ? (
           <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -133,14 +136,14 @@ export function SignupForm({
         ) : null}
         <Field>
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Creating account..." : "Create Account"}
+            {isPending ? t.signupPending : t.signupButton}
           </Button>
         </Field>
-        <FieldSeparator>Or continue with</FieldSeparator>
+        <FieldSeparator>{t.orContinueWith}</FieldSeparator>
         <Field>
-          <GoogleAuthButton />
+          <GoogleAuthButton label={t.continueWithGoogle} />
           <FieldDescription className="px-6 text-center">
-            Already have an account? <Link href="/login">Sign in</Link>
+            {t.alreadyHaveAccount} <Link href="/login">{t.signIn}</Link>
           </FieldDescription>
         </Field>
       </FieldGroup>

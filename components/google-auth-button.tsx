@@ -3,16 +3,20 @@ import { cn } from "@/lib/utils";
 
 type GoogleAuthButtonProps = {
   className?: string;
+  label?: string;
 };
 
-export function GoogleAuthButton({ className }: GoogleAuthButtonProps) {
+export function GoogleAuthButton({
+  className,
+  label = "Continue with Google",
+}: GoogleAuthButtonProps) {
   return (
     <a
       className={cn(buttonVariants({ variant: "outline" }), "w-full", className)}
       href="/api/auth/google"
     >
       <GoogleLogo />
-      Continue with Google
+      {label}
     </a>
   );
 }

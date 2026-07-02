@@ -155,10 +155,10 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/profile")}>
                 <BadgeCheckIcon
                 />
-                {t.account}
+                {t.profile}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

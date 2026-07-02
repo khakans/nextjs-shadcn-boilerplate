@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { GoogleAuthButton } from "@/components/google-auth-button"
+import { getMessages } from "@/lib/i18n"
+import { useLanguagePreference } from "@/lib/theme"
 import {
   Field,
   FieldDescription,
@@ -24,10 +26,11 @@ export function LoginForm({
   authError?: string
 }) {
   const router = useRouter()
-  const [error, setError] = React.useState<string | null>(
-    authError === "google" ? "Unable to continue with Google." : null
-  )
+  const { language } = useLanguagePreference()
+  const t = getMessages(language)
+  const [error, setError] = React.useState<string | null>(null)
   const [isPending, setIsPending] = React.useState(false)
+  const displayError = error ?? (authError === "google" ? t.loginGoogleError : null)
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -50,7 +53,7 @@ export function LoginForm({
     setIsPending(false)
 
     if (!response.ok) {
-      setError(payload?.error ?? "Unable to login.")
+      setError(payload?.error ?? t.loginFailed)
       return
     }
 
@@ -66,50 +69,50 @@ export function LoginForm({
     >
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
-          <h1 className="text-2xl font-bold">Login to your account</h1>
+          <h1 className="text-2xl font-bold">{t.loginTitle}</h1>
           <p className="text-sm text-balance text-muted-foreground">
-            Enter your email below to login to your account
+            {t.loginDescription}
           </p>
         </div>
         <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <FieldLabel htmlFor="email">{t.email}</FieldLabel>
           <Input
             id="email"
             name="email"
             type="email"
-            placeholder="m@example.com"
+            placeholder={t.emailPlaceholder}
             required
           />
         </Field>
         <Field>
           <div className="flex items-center">
-            <FieldLabel htmlFor="password">Password</FieldLabel>
+            <FieldLabel htmlFor="password">{t.password}</FieldLabel>
             <a
               href="#"
               className="ml-auto text-sm underline-offset-4 hover:underline"
             >
-              Forgot your password?
+              {t.forgotPassword}
             </a>
           </div>
           <Input id="password" name="password" type="password" required />
         </Field>
-        {error ? (
+        {displayError ? (
           <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {error}
+            {displayError}
           </p>
         ) : null}
         <Field>
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Logging in..." : "Login"}
+            {isPending ? t.loginPending : t.login}
           </Button>
         </Field>
-        <FieldSeparator>Or continue with</FieldSeparator>
+        <FieldSeparator>{t.orContinueWith}</FieldSeparator>
         <Field>
-          <GoogleAuthButton />
+          <GoogleAuthButton label={t.continueWithGoogle} />
           <FieldDescription className="text-center">
-            Don&apos;t have an account?{" "}
+            {t.dontHaveAccount}{" "}
             <Link href="/signup" className="underline underline-offset-4">
-              Sign up
+              {t.signUp}
             </Link>
           </FieldDescription>
         </Field>
