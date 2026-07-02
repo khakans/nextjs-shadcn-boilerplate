@@ -8,10 +8,11 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import type { AuthUser } from "@/lib/auth";
 import { getMessages } from "@/lib/i18n";
 import { useLanguagePreference } from "@/lib/theme";
 
-export function DashboardShell() {
+export function DashboardShell({ user }: { user: AuthUser }) {
   const { language } = useLanguagePreference();
   const t = getMessages(language);
   const breadcrumbItems = [
@@ -26,7 +27,7 @@ export function DashboardShell() {
 
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar user={user} />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">

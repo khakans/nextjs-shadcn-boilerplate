@@ -1,4 +1,8 @@
+"use client"
+
+import * as React from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -14,9 +18,56 @@ import { Input } from "@/components/ui/input"
 export function SignupForm({
   className,
   ...props
-}: React.ComponentProps<"form">) {
+}: Omit<React.ComponentProps<"form">, "onSubmit">) {
+  const router = useRouter()
+  const [error, setError] = React.useState<string | null>(null)
+  const [isPending, setIsPending] = React.useState(false)
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError(null)
+
+    const formData = new FormData(event.currentTarget)
+    const password = String(formData.get("password") ?? "")
+    const confirmPassword = String(formData.get("confirmPassword") ?? "")
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.")
+      return
+    }
+
+    setIsPending(true)
+
+    const response = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: formData.get("name"),
+        email: formData.get("email"),
+        password,
+      }),
+    })
+    const payload = await response.json().catch(() => null)
+
+    setIsPending(false)
+
+    if (!response.ok) {
+      setError(payload?.error ?? "Unable to create account.")
+      return
+    }
+
+    router.push("/")
+    router.refresh()
+  }
+
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form
+      className={cn("flex flex-col gap-6", className)}
+      onSubmit={handleSubmit}
+      {...props}
+    >
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="text-2xl font-bold">Create your account</h1>
@@ -28,6 +79,7 @@ export function SignupForm({
           <FieldLabel htmlFor="name">Full Name</FieldLabel>
           <Input
             id="name"
+            name="name"
             type="text"
             placeholder="John Doe"
             required
@@ -38,6 +90,7 @@ export function SignupForm({
           <FieldLabel htmlFor="email">Email</FieldLabel>
           <Input
             id="email"
+            name="email"
             type="email"
             placeholder="m@example.com"
             required
@@ -52,6 +105,7 @@ export function SignupForm({
           <FieldLabel htmlFor="password">Password</FieldLabel>
           <Input
             id="password"
+            name="password"
             type="password"
             required
             className="bg-background"
@@ -64,14 +118,22 @@ export function SignupForm({
           <FieldLabel htmlFor="confirm-password">Confirm Password</FieldLabel>
           <Input
             id="confirm-password"
+            name="confirmPassword"
             type="password"
             required
             className="bg-background"
           />
           <FieldDescription>Please confirm your password.</FieldDescription>
         </Field>
+        {error ? (
+          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
+          </p>
+        ) : null}
         <Field>
-          <Button type="submit">Create Account</Button>
+          <Button type="submit" disabled={isPending}>
+            {isPending ? "Creating account..." : "Create Account"}
+          </Button>
         </Field>
         <FieldSeparator>Or continue with</FieldSeparator>
         <Field>
