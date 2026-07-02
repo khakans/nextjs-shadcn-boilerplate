@@ -1,5 +1,7 @@
 export const ACCESS_TOKEN_COOKIE_NAME = "access_token";
 export const REFRESH_TOKEN_COOKIE_NAME = "refresh_token";
+export const GOOGLE_OAUTH_STATE_COOKIE_NAME = "google_oauth_state";
+export const GOOGLE_OAUTH_LINK_COOKIE_NAME = "google_oauth_link";
 export const CSRF_SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 export function getJwtSecret() {
@@ -29,6 +31,70 @@ export function getRefreshTokenMaxAge() {
 
 export function getRefreshTokenExpiresAt() {
   return new Date(Date.now() + getRefreshTokenMaxAge() * 1000);
+}
+
+export function getGoogleClientId() {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+
+  if (!clientId) {
+    throw new Error("GOOGLE_CLIENT_ID is required.");
+  }
+
+  return clientId;
+}
+
+export function getGoogleClientSecret() {
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+  if (!clientSecret) {
+    throw new Error("GOOGLE_CLIENT_SECRET is required.");
+  }
+
+  return normalizeGoogleClientSecret(clientSecret);
+}
+
+export function getAppBaseUrl(requestUrl: string) {
+  const configuredUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL;
+
+  if (configuredUrl) {
+    return configuredUrl.replace(/\/$/, "");
+  }
+
+  const url = new URL(requestUrl);
+
+  if (url.hostname === "127.0.0.1") {
+    url.hostname = "localhost";
+  }
+
+  return url.origin;
+}
+
+export function getGoogleRedirectUri(requestUrl: string) {
+  return new URL(
+    "/api/auth/google/callback",
+    getAppBaseUrl(requestUrl),
+  ).toString();
+}
+
+function normalizeGoogleClientSecret(clientSecret: string) {
+  const trimmedClientSecret = clientSecret.trim();
+  const googleSecretMatches = [
+    ...trimmedClientSecret.matchAll(/GOCSPX-[A-Za-z0-9_-]+?(?=GOCSPX-|$)/g),
+  ].map((match) => match[0]);
+
+  if (googleSecretMatches.length <= 1) {
+    return trimmedClientSecret;
+  }
+
+  const uniqueSecrets = new Set(googleSecretMatches);
+
+  if (uniqueSecrets.size === 1) {
+    return googleSecretMatches[0];
+  }
+
+  throw new Error(
+    "GOOGLE_CLIENT_SECRET contains multiple different Google client secrets.",
+  );
 }
 
 function parseDurationToSeconds(duration: string, fallbackSeconds: number) {

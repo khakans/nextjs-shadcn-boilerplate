@@ -1,9 +1,14 @@
+-- CreateEnum
+CREATE TYPE "AuthProvider" AS ENUM ('LOCAL', 'GOOGLE');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
-    "passwordHash" TEXT NOT NULL,
+    "passwordHash" TEXT,
+    "provider" "AuthProvider" NOT NULL DEFAULT 'LOCAL',
+    "googleId" TEXT,
     "tokenVersion" INTEGER NOT NULL DEFAULT 0,
     "avatarUrl" TEXT,
     "emailVerifiedAt" TIMESTAMP(3),
@@ -32,6 +37,9 @@ CREATE TABLE "RefreshToken" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_googleId_key" ON "User"("googleId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "RefreshToken_tokenHash_key" ON "RefreshToken"("tokenHash");

@@ -66,6 +66,7 @@ export async function loginService(input: LoginRequest) {
   if (
     !user ||
     !user.isActive ||
+    !user.passwordHash ||
     !(await verifyPassword(input.password, user.passwordHash))
   ) {
     throw new ApiError("Invalid email or password.", 401);

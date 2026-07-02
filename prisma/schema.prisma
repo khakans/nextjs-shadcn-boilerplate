@@ -7,11 +7,18 @@ datasource db {
   provider = "postgresql"
 }
 
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
 model User {
   id              String         @id @default(uuid(7)) @db.Uuid
   name            String
   email           String         @unique
-  passwordHash    String
+  passwordHash    String?
+  provider        AuthProvider   @default(LOCAL)
+  googleId        String?        @unique
   tokenVersion    Int            @default(0)
   avatarUrl       String?
   emailVerifiedAt DateTime?
