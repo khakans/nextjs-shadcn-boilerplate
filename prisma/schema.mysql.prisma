@@ -1,0 +1,10 @@
+// Keep models in sync across the provider-specific schema files.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma/mysql"
+}
+
+datasource db {
+  provider = "mysql"
+}
