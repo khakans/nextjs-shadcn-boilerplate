@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { GoogleAuthButton } from "@/components/google-auth-button"
+import { apiPath } from "@/lib/api-paths"
 import { getMessages } from "@/lib/i18n"
 import { useLanguagePreference } from "@/lib/theme"
 import {
@@ -38,7 +39,7 @@ export function LoginForm({
     setIsPending(true)
 
     const formData = new FormData(event.currentTarget)
-    const response = await fetch("/api/auth/login", {
+    const response = await fetch(apiPath("/auth/login"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -1,3 +1,5 @@
+import { apiPath } from "@/lib/api-paths";
+
 export const ACCESS_TOKEN_COOKIE_NAME = "access_token";
 export const REFRESH_TOKEN_COOKIE_NAME = "refresh_token";
 export const GOOGLE_OAUTH_STATE_COOKIE_NAME = "google_oauth_state";
@@ -71,7 +73,7 @@ export function getAppBaseUrl(requestUrl: string) {
 
 export function getGoogleRedirectUri(requestUrl: string) {
   return new URL(
-    "/api/auth/google/callback",
+    apiPath("/auth/google/callback"),
     getAppBaseUrl(requestUrl),
   ).toString();
 }

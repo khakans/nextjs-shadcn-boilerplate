@@ -22,6 +22,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { apiPath } from "@/lib/api-paths"
 import type { AuthUser } from "@/lib/auth"
 import { getMessages } from "@/lib/i18n"
 import { useLanguagePreference } from "@/lib/theme"
@@ -72,7 +73,7 @@ export function ProfileShell({ user }: { user: AuthUser }) {
     formData.append("avatar", file)
     setIsUploadingAvatar(true)
 
-    const response = await fetch("/api/profile/avatar", {
+    const response = await fetch(apiPath("/profile/avatar"), {
       method: "POST",
       body: formData,
     })
@@ -108,7 +109,7 @@ export function ProfileShell({ user }: { user: AuthUser }) {
 
     setIsChangingPassword(true)
 
-    const response = await fetch("/api/profile/password", {
+    const response = await fetch(apiPath("/profile/password"), {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -143,7 +144,7 @@ export function ProfileShell({ user }: { user: AuthUser }) {
 
     setIsDeleting(true)
 
-    const response = await fetch("/api/profile", {
+    const response = await fetch(apiPath("/profile"), {
       method: "DELETE",
     })
     const payload = await response.json().catch(() => null)
