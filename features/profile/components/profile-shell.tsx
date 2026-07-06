@@ -14,6 +14,8 @@ import {
   AvatarProfileSection,
   DeleteAccountSection,
   PasswordSection,
+  ProfileDetailsSection,
+  UsernameDialog,
 } from "@/features/profile/components/profile-sections";
 import { useProfileSettings } from "@/features/profile/hooks/use-profile-settings";
 import type { AuthUser } from "@/lib/auth";
@@ -56,11 +58,52 @@ export function ProfileShell({ user }: { user: AuthUser }) {
           />
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
-            <AccountInfoSection t={profile.t} user={profile.profileUser} />
+            <div className="grid gap-6">
+              <AccountInfoSection
+                onEditUsername={profile.openUsernameDialog}
+                t={profile.t}
+                usernameSuccess={profile.usernameSuccess}
+                user={profile.profileUser}
+              />
+              <UsernameDialog
+                confirmOpen={profile.isUsernameConfirmOpen}
+                draft={profile.usernameDraft}
+                error={profile.usernameError}
+                isPending={profile.isUpdatingUsername}
+                onConfirm={profile.confirmUsernameChange}
+                onConfirmOpenChange={profile.setIsUsernameConfirmOpen}
+                onDraftChange={profile.setUsernameDraft}
+                onOpenChange={profile.handleUsernameDialogOpenChange}
+                onSubmit={profile.handleUsernameSubmit}
+                open={profile.isUsernameDialogOpen}
+                pendingUsername={profile.pendingUsername}
+                t={profile.t}
+              />
+              <ProfileDetailsSection
+                key={[
+                  profile.profileUser.birthDate,
+                  profile.profileUser.birthPlace,
+                  profile.profileUser.gender,
+                  profile.profileUser.mobileNumber,
+                ].join(":")}
+                confirmOpen={profile.isProfileDetailsConfirmOpen}
+                error={profile.profileDetailsError}
+                isPending={profile.isUpdatingProfileDetails}
+                onConfirm={profile.confirmProfileDetailsChange}
+                onConfirmOpenChange={profile.setIsProfileDetailsConfirmOpen}
+                onSubmit={profile.handleProfileDetailsSubmit}
+                success={profile.profileDetailsSuccess}
+                t={profile.t}
+                user={profile.profileUser}
+              />
+            </div>
             <PasswordSection
+              confirmOpen={profile.isPasswordConfirmOpen}
               error={profile.passwordError}
               formRef={profile.passwordFormRef}
               isPending={profile.isChangingPassword}
+              onConfirm={profile.confirmPasswordChange}
+              onConfirmOpenChange={profile.setIsPasswordConfirmOpen}
               onSubmit={profile.handlePasswordSubmit}
               success={profile.passwordSuccess}
               t={profile.t}
@@ -69,9 +112,12 @@ export function ProfileShell({ user }: { user: AuthUser }) {
 
           <DeleteAccountSection
             confirmation={profile.deleteConfirmation}
+            confirmOpen={profile.isDeleteConfirmOpen}
             error={profile.deleteError}
             isPending={profile.isDeleting}
             onConfirmationChange={profile.setDeleteConfirmation}
+            onConfirm={profile.confirmDeleteAccount}
+            onConfirmOpenChange={profile.handleDeleteConfirmOpenChange}
             onDeleteAccount={profile.handleDeleteAccount}
             t={profile.t}
           />

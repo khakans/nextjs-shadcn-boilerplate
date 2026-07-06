@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export type LoginRequest = {
-  email: string;
+  identifier: string;
   password: string;
 };
 
@@ -22,7 +22,7 @@ type RequestParseResult<T> =
     };
 
 const loginSchema = z.object({
-  email: z.email("Enter a valid email address.").trim().toLowerCase(),
+  identifier: z.string().trim().min(1, "Email or username is required."),
   password: z.string().min(1, "Password is required."),
 });
 

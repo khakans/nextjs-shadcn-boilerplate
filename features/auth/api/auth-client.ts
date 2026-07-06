@@ -11,7 +11,7 @@ type OkResponse = {
 };
 
 export type LoginInput = {
-  email: string;
+  identifier: string;
   password: string;
 };
 

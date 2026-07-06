@@ -41,12 +41,13 @@ export function LoginForm({
           </p>
         </div>
         <Field>
-          <FieldLabel htmlFor="email">{t.email}</FieldLabel>
+          <FieldLabel htmlFor="identifier">{t.emailOrUsername}</FieldLabel>
           <Input
-            id="email"
-            name="email"
-            type="email"
-            placeholder={t.emailPlaceholder}
+            id="identifier"
+            name="identifier"
+            type="text"
+            placeholder={t.emailOrUsernamePlaceholder}
+            autoComplete="username"
             required
           />
         </Field>

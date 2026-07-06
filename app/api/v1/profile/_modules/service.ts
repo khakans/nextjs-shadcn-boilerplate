@@ -12,7 +12,7 @@ import {
 } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
-import type { AvatarRequest, PasswordRequest } from "./request";
+import type { AvatarRequest, PasswordRequest, ProfileUpdateRequest } from "./request";
 
 export async function deleteProfileService() {
   const user = await requireProfileUser();
@@ -32,6 +32,72 @@ export async function deleteProfileService() {
   await clearAuthCookies();
 }
 
+export async function updateProfileService(input: ProfileUpdateRequest) {
+  const user = await requireProfileUser();
+
+  if ("username" in input && input.username && input.username !== user.username) {
+    const existingUser = await prisma.user.findUnique({
+      where: {
+        username: input.username,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (existingUser && existingUser.id !== user.id) {
+      throw new ApiError("Username is already taken.", 409);
+    }
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: {
+      id: user.id,
+    },
+    data: {
+      ...("username" in input
+        ? {
+            username: input.username,
+          }
+        : {}),
+      ...("birthDate" in input
+        ? {
+            birthDate: input.birthDate,
+          }
+        : {}),
+      ...("birthPlace" in input
+        ? {
+            birthPlace: input.birthPlace,
+          }
+        : {}),
+      ...("gender" in input
+        ? {
+            gender: input.gender,
+          }
+        : {}),
+      ...("mobileNumber" in input
+        ? {
+            mobileNumber: input.mobileNumber,
+          }
+        : {}),
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      username: true,
+      avatarUrl: true,
+      birthDate: true,
+      birthPlace: true,
+      gender: true,
+      mobileNumber: true,
+      tokenVersion: true,
+    },
+  });
+
+  return toAuthUser(updatedUser);
+}
+
 export async function updateAvatarService(input: AvatarRequest) {
   const user = await requireProfileUser();
   const buffer = Buffer.from(await input.avatar.arrayBuffer());
@@ -47,7 +113,12 @@ export async function updateAvatarService(input: AvatarRequest) {
       id: true,
       name: true,
       email: true,
+      username: true,
       avatarUrl: true,
+      birthDate: true,
+      birthPlace: true,
+      gender: true,
+      mobileNumber: true,
       tokenVersion: true,
     },
   });
@@ -65,8 +136,13 @@ export async function changePasswordService(input: PasswordRequest) {
       id: true,
       name: true,
       email: true,
+      username: true,
       passwordHash: true,
       avatarUrl: true,
+      birthDate: true,
+      birthPlace: true,
+      gender: true,
+      mobileNumber: true,
       tokenVersion: true,
       isActive: true,
     },
@@ -99,7 +175,12 @@ export async function changePasswordService(input: PasswordRequest) {
       id: true,
       name: true,
       email: true,
+      username: true,
       avatarUrl: true,
+      birthDate: true,
+      birthPlace: true,
+      gender: true,
+      mobileNumber: true,
       tokenVersion: true,
     },
   });

@@ -16,11 +16,16 @@ model User {
   id              String         @id @default(uuid(7)) @db.Uuid
   name            String
   email           String         @unique
+  username        String?        @unique
   passwordHash    String?
   provider        AuthProvider   @default(LOCAL)
   googleId        String?        @unique
   tokenVersion    Int            @default(0)
   avatarUrl       String?
+  birthDate       DateTime?
+  birthPlace      String?
+  gender          String?
+  mobileNumber    String?
   emailVerifiedAt DateTime?
   lastLoginAt     DateTime?
   isActive        Boolean        @default(true)

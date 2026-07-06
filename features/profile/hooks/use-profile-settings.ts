@@ -6,8 +6,13 @@ import { useRouter } from "next/navigation";
 import {
   changePassword,
   deleteAccount,
+  updateProfileDetails,
+  updateUsername,
   uploadAvatar,
+  type ChangePasswordInput,
+  type UpdateProfileDetailsInput,
 } from "@/features/profile/api/profile-client";
+import { formatMobileNumber } from "@/features/profile/lib/phone-country-codes";
 import { getApiErrorMessage } from "@/lib/api/http-client";
 import type { AuthUser } from "@/lib/auth";
 import { getMessages } from "@/lib/i18n";
@@ -26,9 +31,37 @@ export function useProfileSettings(user: AuthUser) {
   const [avatarError, setAvatarError] = React.useState<string | null>(null);
   const [avatarSuccess, setAvatarSuccess] = React.useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = React.useState(false);
+  const [isUsernameDialogOpen, setIsUsernameDialogOpen] = React.useState(false);
+  const [isUsernameConfirmOpen, setIsUsernameConfirmOpen] = React.useState(false);
+  const [usernameDraft, setUsernameDraft] = React.useState(
+    user.username ?? "",
+  );
+  const [pendingUsername, setPendingUsername] = React.useState<string | null>(
+    null,
+  );
+  const [usernameError, setUsernameError] = React.useState<string | null>(null);
+  const [usernameSuccess, setUsernameSuccess] = React.useState<string | null>(null);
+  const [isUpdatingUsername, setIsUpdatingUsername] = React.useState(false);
+  const [profileDetailsError, setProfileDetailsError] = React.useState<
+    string | null
+  >(null);
+  const [profileDetailsSuccess, setProfileDetailsSuccess] = React.useState<
+    string | null
+  >(null);
+  const [isProfileDetailsConfirmOpen, setIsProfileDetailsConfirmOpen] =
+    React.useState(false);
+  const [pendingProfileDetails, setPendingProfileDetails] =
+    React.useState<UpdateProfileDetailsInput | null>(null);
+  const [isUpdatingProfileDetails, setIsUpdatingProfileDetails] =
+    React.useState(false);
   const [passwordError, setPasswordError] = React.useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = React.useState<string | null>(null);
+  const [isPasswordConfirmOpen, setIsPasswordConfirmOpen] =
+    React.useState(false);
+  const [pendingPassword, setPendingPassword] =
+    React.useState<ChangePasswordInput | null>(null);
   const [isChangingPassword, setIsChangingPassword] = React.useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = React.useState("");
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -71,6 +104,113 @@ export function useProfileSettings(user: AuthUser) {
     }
   }
 
+  function openUsernameDialog() {
+    setUsernameDraft(profileUser.username ?? "");
+    setUsernameError(null);
+    setUsernameSuccess(null);
+    setIsUsernameDialogOpen(true);
+  }
+
+  function handleUsernameDialogOpenChange(open: boolean) {
+    setIsUsernameDialogOpen(open);
+
+    if (!open) {
+      setIsUsernameConfirmOpen(false);
+      setPendingUsername(null);
+    }
+  }
+
+  function handleUsernameSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setUsernameError(null);
+
+    const formData = new FormData(event.currentTarget);
+    const username = String(formData.get("username") ?? "").trim();
+    const normalizedUsername = username ? username.toLowerCase() : null;
+    const currentUsername = profileUser.username ?? null;
+
+    if (normalizedUsername === currentUsername) {
+      setUsernameError(t.usernameUnchanged);
+      return;
+    }
+
+    setPendingUsername(normalizedUsername);
+    setIsUsernameConfirmOpen(true);
+  }
+
+  async function confirmUsernameChange() {
+    setUsernameError(null);
+    setUsernameSuccess(null);
+    setIsUpdatingUsername(true);
+
+    try {
+      const payload = await updateUsername({
+        username: pendingUsername,
+      });
+      setProfileUser(payload.user);
+      setUsernameSuccess(t.usernameChanged);
+      setUsernameDraft(payload.user.username ?? "");
+      setPendingUsername(null);
+      setIsUsernameConfirmOpen(false);
+      setIsUsernameDialogOpen(false);
+      router.refresh();
+    } catch (error) {
+      setUsernameError(getApiErrorMessage(error, t.usernameChangeFailed));
+      setIsUsernameConfirmOpen(false);
+    } finally {
+      setIsUpdatingUsername(false);
+    }
+  }
+
+  async function handleProfileDetailsSubmit(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+    setProfileDetailsError(null);
+    setProfileDetailsSuccess(null);
+
+    const formData = new FormData(event.currentTarget);
+    const birthDate = String(formData.get("birthDate") ?? "").trim();
+    const birthPlace = String(formData.get("birthPlace") ?? "").trim();
+    const gender = String(formData.get("gender") ?? "").trim();
+    const countryCode = String(formData.get("countryCode") ?? "").trim();
+    const localMobileNumber = String(formData.get("mobileNumber") ?? "");
+
+    setPendingProfileDetails({
+      birthDate: birthDate || null,
+      birthPlace: birthPlace || null,
+      gender: gender || null,
+      mobileNumber: formatMobileNumber(countryCode, localMobileNumber),
+    });
+    setIsProfileDetailsConfirmOpen(true);
+  }
+
+  async function confirmProfileDetailsChange() {
+    if (!pendingProfileDetails) {
+      return;
+    }
+
+    setProfileDetailsError(null);
+    setProfileDetailsSuccess(null);
+    setIsUpdatingProfileDetails(true);
+
+    try {
+      const payload = await updateProfileDetails(pendingProfileDetails);
+      setProfileUser(payload.user);
+      setProfileDetailsSuccess(t.profileDetailsChanged);
+      setPendingProfileDetails(null);
+      setIsProfileDetailsConfirmOpen(false);
+      router.refresh();
+    } catch (error) {
+      setProfileDetailsError(
+        getApiErrorMessage(error, t.profileDetailsChangeFailed),
+      );
+      setIsProfileDetailsConfirmOpen(false);
+    } finally {
+      setIsUpdatingProfileDetails(false);
+    }
+  }
+
   async function handlePasswordSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPasswordError(null);
@@ -86,25 +226,53 @@ export function useProfileSettings(user: AuthUser) {
       return;
     }
 
+    setPendingPassword({
+      currentPassword,
+      newPassword,
+    });
+    setIsPasswordConfirmOpen(true);
+  }
+
+  async function confirmPasswordChange() {
+    if (!pendingPassword) {
+      return;
+    }
+
+    setPasswordError(null);
+    setPasswordSuccess(null);
     setIsChangingPassword(true);
 
     try {
-      const payload = await changePassword({
-        currentPassword,
-        newPassword,
-      });
+      const payload = await changePassword(pendingPassword);
       setProfileUser(payload.user);
       passwordFormRef.current?.reset();
       setPasswordSuccess(t.passwordChanged);
+      setPendingPassword(null);
+      setIsPasswordConfirmOpen(false);
       router.refresh();
     } catch (error) {
       setPasswordError(getApiErrorMessage(error, t.passwordChangeFailed));
+      setIsPasswordConfirmOpen(false);
     } finally {
       setIsChangingPassword(false);
     }
   }
 
-  async function handleDeleteAccount() {
+  function handleDeleteAccount() {
+    setDeleteError(null);
+    setDeleteConfirmation("");
+    setIsDeleteConfirmOpen(true);
+  }
+
+  function handleDeleteConfirmOpenChange(open: boolean) {
+    setIsDeleteConfirmOpen(open);
+
+    if (!open) {
+      setDeleteConfirmation("");
+    }
+  }
+
+  async function confirmDeleteAccount() {
     setDeleteError(null);
 
     if (deleteConfirmation !== "DELETE") {
@@ -116,10 +284,13 @@ export function useProfileSettings(user: AuthUser) {
 
     try {
       await deleteAccount();
+      setIsDeleteConfirmOpen(false);
+      setDeleteConfirmation("");
       router.replace("/login");
       router.refresh();
     } catch (error) {
       setDeleteError(getApiErrorMessage(error, t.deleteAccountFailed));
+      setIsDeleteConfirmOpen(false);
     } finally {
       setIsDeleting(false);
     }
@@ -131,17 +302,46 @@ export function useProfileSettings(user: AuthUser) {
     deleteConfirmation,
     deleteError,
     fileInputRef,
+    confirmDeleteAccount,
+    confirmPasswordChange,
+    confirmProfileDetailsChange,
+    confirmUsernameChange,
     handleAvatarChange,
     handleDeleteAccount,
+    handleDeleteConfirmOpenChange,
     handlePasswordSubmit,
+    handleProfileDetailsSubmit,
+    handleUsernameDialogOpenChange,
+    handleUsernameSubmit,
+    isUsernameConfirmOpen,
+    isUsernameDialogOpen,
     isChangingPassword,
+    isDeleteConfirmOpen,
     isDeleting,
+    isPasswordConfirmOpen,
+    isProfileDetailsConfirmOpen,
+    isUpdatingUsername,
+    isUpdatingProfileDetails,
     isUploadingAvatar,
     passwordError,
     passwordFormRef,
     passwordSuccess,
+    pendingPassword,
+    pendingUsername,
     profileUser,
+    profileDetailsError,
+    profileDetailsSuccess,
+    pendingProfileDetails,
+    openUsernameDialog,
+    setIsDeleteConfirmOpen,
+    setIsUsernameConfirmOpen,
+    setIsPasswordConfirmOpen,
+    setIsProfileDetailsConfirmOpen,
     setDeleteConfirmation,
+    setUsernameDraft,
     t,
+    usernameDraft,
+    usernameError,
+    usernameSuccess,
   };
 }

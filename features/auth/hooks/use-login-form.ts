@@ -29,7 +29,7 @@ export function useLoginForm({ authError }: UseLoginFormOptions) {
 
     try {
       await login({
-        email: String(formData.get("email") ?? ""),
+        identifier: String(formData.get("identifier") ?? ""),
         password: String(formData.get("password") ?? ""),
       });
       router.push("/");

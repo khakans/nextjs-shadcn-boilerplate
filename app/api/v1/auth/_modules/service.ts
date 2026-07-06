@@ -40,7 +40,12 @@ export async function signupService(input: SignupRequest) {
       id: true,
       name: true,
       email: true,
+      username: true,
       avatarUrl: true,
+      birthDate: true,
+      birthPlace: true,
+      gender: true,
+      mobileNumber: true,
       tokenVersion: true,
     },
   });
@@ -48,16 +53,26 @@ export async function signupService(input: SignupRequest) {
 }
 
 export async function loginService(input: LoginRequest) {
+  const identifier = input.identifier.toLowerCase();
   const user = await prisma.user.findUnique({
-    where: {
-      email: input.email,
-    },
+    where: identifier.includes("@")
+      ? {
+          email: identifier,
+        }
+      : {
+          username: identifier,
+        },
     select: {
       id: true,
       name: true,
       email: true,
+      username: true,
       passwordHash: true,
       avatarUrl: true,
+      birthDate: true,
+      birthPlace: true,
+      gender: true,
+      mobileNumber: true,
       tokenVersion: true,
       isActive: true,
     },
@@ -83,7 +98,12 @@ export async function loginService(input: LoginRequest) {
       id: true,
       name: true,
       email: true,
+      username: true,
       avatarUrl: true,
+      birthDate: true,
+      birthPlace: true,
+      gender: true,
+      mobileNumber: true,
       tokenVersion: true,
     },
   });
@@ -127,7 +147,12 @@ export async function refreshService() {
       id: true,
       name: true,
       email: true,
+      username: true,
       avatarUrl: true,
+      birthDate: true,
+      birthPlace: true,
+      gender: true,
+      mobileNumber: true,
       tokenVersion: true,
       isActive: true,
     },

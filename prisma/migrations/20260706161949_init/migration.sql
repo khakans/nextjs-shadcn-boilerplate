@@ -6,11 +6,16 @@ CREATE TABLE "User" (
     "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
+    "username" TEXT,
     "passwordHash" TEXT,
     "provider" "AuthProvider" NOT NULL DEFAULT 'LOCAL',
     "googleId" TEXT,
     "tokenVersion" INTEGER NOT NULL DEFAULT 0,
     "avatarUrl" TEXT,
+    "birthDate" TIMESTAMP(3),
+    "birthPlace" TEXT,
+    "gender" TEXT,
+    "mobileNumber" TEXT,
     "emailVerifiedAt" TIMESTAMP(3),
     "lastLoginAt" TIMESTAMP(3),
     "isActive" BOOLEAN NOT NULL DEFAULT true,
@@ -37,6 +42,9 @@ CREATE TABLE "RefreshToken" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_googleId_key" ON "User"("googleId");

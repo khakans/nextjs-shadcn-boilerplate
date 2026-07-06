@@ -15,7 +15,12 @@ export type AuthUser = {
   id: string;
   name: string;
   email: string;
+  username: string | null;
   avatarUrl: string | null;
+  birthDate: string | null;
+  birthPlace: string | null;
+  gender: string | null;
+  mobileNumber: string | null;
   tokenVersion: number;
 };
 
@@ -49,7 +54,12 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
         id: true,
         name: true,
         email: true,
+        username: true,
         avatarUrl: true,
+        birthDate: true,
+        birthPlace: true,
+        gender: true,
+        mobileNumber: true,
         tokenVersion: true,
         isActive: true,
       },
@@ -84,14 +94,36 @@ export function toAuthUser(user: {
   id: string;
   name: string;
   email: string;
+  username: string | null;
   avatarUrl: string | null;
+  birthDate: Date | string | null;
+  birthPlace: string | null;
+  gender: string | null;
+  mobileNumber: string | null;
   tokenVersion: number;
 }): AuthUser {
   return {
     id: user.id,
     name: user.name,
     email: user.email,
+    username: user.username,
     avatarUrl: user.avatarUrl,
+    birthDate: formatAuthDate(user.birthDate),
+    birthPlace: user.birthPlace,
+    gender: user.gender,
+    mobileNumber: user.mobileNumber,
     tokenVersion: user.tokenVersion,
   };
+}
+
+function formatAuthDate(value: Date | string | null) {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  return value.slice(0, 10);
 }
