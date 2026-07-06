@@ -25,7 +25,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { apiPath } from "@/lib/api-paths"
+import { logout } from "@/features/auth/api/auth-client"
 import type { AuthUser } from "@/lib/auth"
 import { getMessages } from "@/lib/i18n"
 import {
@@ -107,9 +107,7 @@ export function NavUser({
   const t = getMessages(language)
 
   async function handleLogout() {
-    await fetch(apiPath("/auth/logout"), {
-      method: "POST",
-    })
+    await logout()
 
     router.push("/login")
     router.refresh()

@@ -1,4 +1,4 @@
-import { DashboardShell } from "@/app/dashboard/components/dashboard-shell";
+import { DashboardShell } from "@/features/dashboard/components/dashboard-shell";
 import { requireCurrentUser } from "@/lib/auth";
 
 export default async function Home() {

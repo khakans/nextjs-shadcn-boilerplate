@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getGoogleLinkRequest } from "@/lib/auth/google";
 
-import { LinkGoogleShell } from "./components/link-google-shell";
+import { LinkGoogleShell } from "@/features/auth/components/link-google-shell";
 
 export default async function LinkGooglePage() {
   const linkRequest = await getGoogleLinkRequest();

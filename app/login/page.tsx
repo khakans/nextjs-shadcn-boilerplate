@@ -1,4 +1,4 @@
-import { LoginForm } from "@/components/login-form"
+import { LoginForm } from "@/features/auth/components/login-form"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { GalleryVerticalEndIcon } from "lucide-react"
 import Image from "next/image"

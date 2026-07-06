@@ -2,14 +2,11 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { GoogleAuthButton } from "@/components/google-auth-button"
-import { apiPath } from "@/lib/api-paths"
-import { getMessages } from "@/lib/i18n"
-import { useLanguagePreference } from "@/lib/theme"
+import { GoogleAuthButton } from "@/features/auth/components/google-auth-button"
+import { useSignupForm } from "@/features/auth/hooks/use-signup-form"
 import {
   Field,
   FieldDescription,
@@ -23,50 +20,7 @@ export function SignupForm({
   className,
   ...props
 }: Omit<React.ComponentProps<"form">, "onSubmit">) {
-  const router = useRouter()
-  const { language } = useLanguagePreference()
-  const t = getMessages(language)
-  const [error, setError] = React.useState<string | null>(null)
-  const [isPending, setIsPending] = React.useState(false)
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setError(null)
-
-    const formData = new FormData(event.currentTarget)
-    const password = String(formData.get("password") ?? "")
-    const confirmPassword = String(formData.get("confirmPassword") ?? "")
-
-    if (password !== confirmPassword) {
-      setError(t.passwordConfirmationMismatch)
-      return
-    }
-
-    setIsPending(true)
-
-    const response = await fetch(apiPath("/auth/signup"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: formData.get("name"),
-        email: formData.get("email"),
-        password,
-      }),
-    })
-    const payload = await response.json().catch(() => null)
-
-    setIsPending(false)
-
-    if (!response.ok) {
-      setError(payload?.error ?? t.signupFailed)
-      return
-    }
-
-    router.push("/")
-    router.refresh()
-  }
+  const { error, handleSubmit, isPending, t } = useSignupForm()
 
   return (
     <form

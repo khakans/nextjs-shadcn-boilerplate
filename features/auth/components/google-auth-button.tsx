@@ -1,5 +1,5 @@
 import { buttonVariants } from "@/components/ui/button";
-import { apiPath } from "@/lib/api-paths";
+import { getGoogleAuthUrl } from "@/features/auth/api/auth-client";
 import { cn } from "@/lib/utils";
 
 type GoogleAuthButtonProps = {
@@ -14,7 +14,7 @@ export function GoogleAuthButton({
   return (
     <a
       className={cn(buttonVariants({ variant: "outline" }), "w-full", className)}
-      href={apiPath("/auth/google")}
+      href={getGoogleAuthUrl()}
     >
       <GoogleLogo />
       {label}

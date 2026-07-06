@@ -1,4 +1,4 @@
-import { ProfileShell } from "./components/profile-shell";
+import { ProfileShell } from "@/features/profile/components/profile-shell";
 import { requireCurrentUser } from "@/lib/auth";
 
 export default async function ProfilePage() {

@@ -5,7 +5,7 @@ import Link from "next/link"
 
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { Button } from "@/components/ui/button"
-import { apiPath } from "@/lib/api-paths"
+import { getGoogleLinkUrl } from "@/features/auth/api/auth-client"
 import { getMessages } from "@/lib/i18n"
 import { useLanguagePreference } from "@/lib/theme"
 
@@ -38,13 +38,13 @@ export function LinkGoogleShell({ email }: { email: string }) {
             </p>
           </div>
           <div className="grid gap-2">
-            <form action={apiPath("/auth/google/link")} method="post">
+            <form action={getGoogleLinkUrl()} method="post">
               <input type="hidden" name="intent" value="link" />
               <Button type="submit" className="w-full">
                 {t.linkGoogleButton}
               </Button>
             </form>
-            <form action={apiPath("/auth/google/link")} method="post">
+            <form action={getGoogleLinkUrl()} method="post">
               <input type="hidden" name="intent" value="cancel" />
               <Button type="submit" variant="outline" className="w-full">
                 {t.linkGoogleCancel}
