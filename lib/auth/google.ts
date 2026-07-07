@@ -10,6 +10,7 @@ import {
   getGoogleClientSecret,
   getJwtSecret,
 } from "@/lib/auth/config";
+import { assertAllowedUserEmailDomain } from "@/lib/auth/email-domain";
 import { toAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -138,6 +139,8 @@ export async function authenticateGoogleOAuth(
       user: toAuthUser(user),
     };
   }
+
+  assertAllowedUserEmailDomain(email);
 
   const user = await prisma.user.create({
     data: {

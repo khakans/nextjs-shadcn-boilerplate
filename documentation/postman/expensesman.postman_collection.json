@@ -1,0 +1,483 @@
+{
+  "info": {
+    "_postman_id": "9b4e7c6b-f857-48c1-9d49-f08d2e174c57",
+    "name": "Expensesman API",
+    "description": "Postman collection for Expensesman API. Responses use the envelope `{ status, message, data }`. Authentication uses HttpOnly cookies, so keep Postman's cookie jar enabled.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Response is valid JSON envelope when body exists', function () {",
+          "  if (!pm.response.text()) return;",
+          "  const json = pm.response.json();",
+          "  pm.expect(json).to.have.property('status');",
+          "  pm.expect(json).to.have.property('message');",
+          "  pm.expect(json).to.have.property('data');",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api/v1"
+    },
+    {
+      "key": "app_url",
+      "value": "http://localhost:3000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{name}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/signup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            },
+            "description": "Creates a LOCAL user. Respects USER_DOMAIN allowlist when configured."
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Logs in and stores auth cookies in Postman's cookie jar."
+          }
+        },
+        {
+          "name": "Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Logout Current Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/forgot-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "description": "Creates a password reset token and queues the reset email job. Run `bun run worker:jobs` to send queued email."
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{reset_token}}\",\n  \"password\": \"{{new_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/reset-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "reset-password"
+              ]
+            },
+            "description": "Use the token from the reset-password email URL."
+          }
+        },
+        {
+          "name": "Start Google OAuth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/google",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "google"
+              ]
+            },
+            "description": "Redirects to Google OAuth. For browser testing, open this URL directly."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sessions",
+      "item": [
+        {
+          "name": "List Active Sessions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const sessions = json.data && Array.isArray(json.data.sessions) ? json.data.sessions : [];",
+                  "const otherSession = sessions.find((session) => !session.isCurrent);",
+                  "if (otherSession) {",
+                  "  pm.environment.set('session_id', otherSession.sessionId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/sessions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "sessions"
+              ]
+            },
+            "description": "Lists active sessions for the current user. Saves the first non-current sessionId into `session_id` when available."
+          }
+        },
+        {
+          "name": "Revoke Session",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/sessions/{{session_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "sessions",
+                "{{session_id}}"
+              ]
+            },
+            "description": "Revokes another active session. The current session cannot be revoked through this endpoint."
+          }
+        },
+        {
+          "name": "Logout Other Devices",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/sessions/logout-others",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "sessions",
+                "logout-others"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "Update Username",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Profile Details",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"birthDate\": \"2000-01-01\",\n  \"birthPlace\": \"Jakarta\",\n  \"gender\": \"prefer_not_to_say\",\n  \"mobileNumber\": \"+6281234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"{{password}}\",\n  \"newPassword\": \"{{new_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/profile/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile",
+                "password"
+              ]
+            },
+            "description": "After success, use `new_password` for subsequent login or swap environment password values."
+          }
+        },
+        {
+          "name": "Upload Avatar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": "{{avatar_file_path}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/profile/avatar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile",
+                "avatar"
+              ]
+            },
+            "description": "Set `avatar_file_path` in the environment to a local JPG or PNG path before sending."
+          }
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile"
+              ]
+            },
+            "description": "Deactivates the current account and clears auth cookies."
+          }
+        }
+      ]
+    }
+  ]
+}

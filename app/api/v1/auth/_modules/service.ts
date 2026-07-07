@@ -10,11 +10,14 @@ import {
   refreshAuthSession,
   revokeCurrentAuthSession,
 } from "@/lib/auth/session";
+import { assertAllowedUserEmailDomain } from "@/lib/auth/email-domain";
 import { prisma } from "@/lib/prisma";
 
 import type { LoginRequest, SignupRequest } from "./request";
 
 export async function signupService(input: SignupRequest) {
+  assertAllowedUserEmailDomain(input.email);
+
   const existingUser = await prisma.user.findUnique({
     where: {
       email: input.email,
