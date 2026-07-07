@@ -10,6 +10,25 @@ type OkResponse = {
   ok: true;
 };
 
+export type UserSessionItem = {
+  id: string;
+  sessionId: string;
+  browser: string | null;
+  operatingSystem: string | null;
+  deviceName: string | null;
+  ipAddress: string | null;
+  loginAt: string;
+  lastActiveAt: string;
+  logoutAt: string | null;
+  expiredAt: string;
+  status: "ONLINE" | "LOGGED_OUT" | "EXPIRED" | "REVOKED";
+  isCurrent: boolean;
+};
+
+type UserSessionsResponse = {
+  sessions: UserSessionItem[];
+};
+
 export type LoginInput = {
   identifier: string;
   password: string;
@@ -18,6 +37,15 @@ export type LoginInput = {
 export type SignupInput = {
   name: string;
   email: string;
+  password: string;
+};
+
+export type ForgotPasswordInput = {
+  email: string;
+};
+
+export type ResetPasswordInput = {
+  token: string;
   password: string;
 };
 
@@ -43,6 +71,42 @@ export function signup(input: SignupInput) {
 
 export function logout() {
   return apiRequest<OkResponse>("/auth/logout", {
+    method: "POST",
+  });
+}
+
+export function forgotPassword(input: ForgotPasswordInput) {
+  return apiRequest<OkResponse>("/auth/forgot-password", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+}
+
+export function resetPassword(input: ResetPasswordInput) {
+  return apiRequest<OkResponse>("/auth/reset-password", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+}
+
+export function getUserSessions() {
+  return apiRequest<UserSessionsResponse>("/auth/sessions");
+}
+
+export function revokeUserSession(sessionId: string) {
+  return apiRequest<OkResponse>(`/auth/sessions/${sessionId}`, {
+    method: "DELETE",
+  });
+}
+
+export function logoutOtherUserSessions() {
+  return apiRequest<OkResponse>("/auth/sessions/logout-others", {
     method: "POST",
   });
 }

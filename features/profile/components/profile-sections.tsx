@@ -1,11 +1,15 @@
 "use client";
 
 import * as React from "react";
+import { toast } from "sonner";
 import {
   CameraIcon,
   ChevronDownIcon,
   LockKeyholeIcon,
+  LogOutIcon,
+  MonitorSmartphoneIcon,
   PencilIcon,
+  ShieldCheckIcon,
   Trash2Icon,
 } from "lucide-react";
 
@@ -34,15 +38,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  getUserSessions,
+  logoutOtherUserSessions,
+  revokeUserSession,
+  type UserSessionItem,
+} from "@/features/auth/api/auth-client";
+import {
   phoneCountryCodes,
   splitMobileNumber,
 } from "@/features/profile/lib/phone-country-codes";
+import { getApiErrorMessage } from "@/lib/api/http-client";
 import type { AuthUser } from "@/lib/auth";
 import type { getMessages } from "@/lib/i18n";
 
@@ -50,7 +62,6 @@ type Messages = ReturnType<typeof getMessages>;
 
 type AvatarProfileSectionProps = {
   avatarError: string | null;
-  avatarSuccess: string | null;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   isUploadingAvatar: boolean;
   onAvatarChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -60,7 +71,6 @@ type AvatarProfileSectionProps = {
 
 export function AvatarProfileSection({
   avatarError,
-  avatarSuccess,
   fileInputRef,
   isUploadingAvatar,
   onAvatarChange,
@@ -100,7 +110,7 @@ export function AvatarProfileSection({
           {t.profileDescription}
         </p>
         <p className="mt-3 text-xs text-muted-foreground">{t.avatarHelp}</p>
-        <StatusMessage error={avatarError} success={avatarSuccess} />
+        <StatusMessage error={avatarError} />
       </div>
     </section>
   );
@@ -109,12 +119,10 @@ export function AvatarProfileSection({
 export function AccountInfoSection({
   onEditUsername,
   t,
-  usernameSuccess,
   user,
 }: {
   onEditUsername: () => void;
   t: Messages;
-  usernameSuccess: string | null;
   user: AuthUser;
 }) {
   return (
@@ -152,7 +160,6 @@ export function AccountInfoSection({
           }
         />
       </dl>
-      <StatusMessage success={usernameSuccess} />
     </section>
   );
 }
@@ -268,7 +275,6 @@ type ProfileDetailsSectionProps = {
   onConfirm: () => void;
   onConfirmOpenChange: (open: boolean) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-  success: string | null;
   t: Messages;
   user: AuthUser;
 };
@@ -280,7 +286,6 @@ export function ProfileDetailsSection({
   onConfirm,
   onConfirmOpenChange,
   onSubmit,
-  success,
   t,
   user,
 }: ProfileDetailsSectionProps) {
@@ -445,7 +450,7 @@ export function ProfileDetailsSection({
               <FieldDescription>{t.mobileNumberDescription}</FieldDescription>
             </Field>
           </div>
-          <StatusMessage error={error} success={success} />
+          <StatusMessage error={error} />
           <Button type="submit" className="w-fit" disabled={isPending}>
             {isPending ? t.saveProfileDetailsPending : t.saveProfileDetails}
           </Button>
@@ -485,7 +490,6 @@ type PasswordSectionProps = {
   onConfirm: () => void;
   onConfirmOpenChange: (open: boolean) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-  success: string | null;
   t: Messages;
 };
 
@@ -497,7 +501,6 @@ export function PasswordSection({
   onConfirm,
   onConfirmOpenChange,
   onSubmit,
-  success,
   t,
 }: PasswordSectionProps) {
   return (
@@ -547,7 +550,7 @@ export function PasswordSection({
               required
             />
           </Field>
-          <StatusMessage error={error} success={success} />
+          <StatusMessage error={error} />
           <Button type="submit" disabled={isPending}>
             {isPending ? t.savePasswordPending : t.savePassword}
           </Button>
@@ -571,6 +574,243 @@ export function PasswordSection({
             </DialogClose>
             <Button type="button" disabled={isPending} onClick={onConfirm}>
               {isPending ? t.savePasswordPending : t.confirm}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </section>
+  );
+}
+
+export function ActiveSessionsSection({ t }: { t: Messages }) {
+  const [sessions, setSessions] = React.useState<UserSessionItem[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [pendingSession, setPendingSession] =
+    React.useState<UserSessionItem | null>(null);
+  const [isRevokeConfirmOpen, setIsRevokeConfirmOpen] = React.useState(false);
+  const [isLogoutOthersConfirmOpen, setIsLogoutOthersConfirmOpen] =
+    React.useState(false);
+  const [pendingAction, setPendingAction] = React.useState<
+    "session" | "others" | null
+  >(null);
+
+  const otherSessions = sessions.filter((session) => !session.isCurrent);
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    async function loadSessions() {
+      setIsLoading(true);
+
+      try {
+        const payload = await getUserSessions();
+
+        if (isMounted) {
+          setSessions(payload.sessions);
+        }
+      } catch (loadError) {
+        if (isMounted) {
+          toast.error(getApiErrorMessage(loadError, t.sessionsLoadFailed));
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadSessions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [t.sessionsLoadFailed]);
+
+  function openRevokeSessionDialog(session: UserSessionItem) {
+    setPendingSession(session);
+    setIsRevokeConfirmOpen(true);
+  }
+
+  async function confirmRevokeSession() {
+    if (!pendingSession) {
+      return;
+    }
+
+    setPendingAction("session");
+
+    try {
+      await revokeUserSession(pendingSession.sessionId);
+      setSessions((currentSessions) =>
+        currentSessions.filter(
+          (session) => session.sessionId !== pendingSession.sessionId,
+        ),
+      );
+      toast.success(t.sessionLoggedOut);
+      setPendingSession(null);
+      setIsRevokeConfirmOpen(false);
+    } catch (revokeError) {
+      toast.error(getApiErrorMessage(revokeError, t.sessionLogoutFailed));
+      setIsRevokeConfirmOpen(false);
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function confirmLogoutOthers() {
+    setPendingAction("others");
+
+    try {
+      await logoutOtherUserSessions();
+      setSessions((currentSessions) =>
+        currentSessions.filter((session) => session.isCurrent),
+      );
+      toast.success(t.otherSessionsLoggedOut);
+      setIsLogoutOthersConfirmOpen(false);
+    } catch (logoutError) {
+      toast.error(getApiErrorMessage(logoutError, t.otherSessionsLogoutFailed));
+      setIsLogoutOthersConfirmOpen(false);
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  return (
+    <section className="rounded-lg border bg-background p-5">
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-2">
+          <MonitorSmartphoneIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold">{t.activeSessions}</h2>
+            <p className="text-sm text-muted-foreground">
+              {t.activeSessionsDescription}
+            </p>
+          </div>
+        </div>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-sm"
+                aria-label={t.logoutOtherDevices}
+                disabled={
+                  isLoading ||
+                  otherSessions.length === 0 ||
+                  pendingAction !== null
+                }
+                onClick={() => {
+                  setIsLogoutOthersConfirmOpen(true);
+                }}
+              />
+            }
+          >
+            <LogOutIcon />
+          </TooltipTrigger>
+          <TooltipContent>{t.logoutOtherDevices}</TooltipContent>
+        </Tooltip>
+      </div>
+
+      <div className="grid gap-3">
+        {isLoading ? (
+          <>
+            <SessionSkeleton />
+            <SessionSkeleton />
+          </>
+        ) : sessions.length === 0 ? (
+          <div className="rounded-lg border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
+            {t.noActiveSessions}
+          </div>
+        ) : (
+          sessions.map((session) => (
+            <SessionListItem
+              key={session.sessionId}
+              isPending={pendingAction !== null}
+              onLogout={() => openRevokeSessionDialog(session)}
+              session={session}
+              t={t}
+            />
+          ))
+        )}
+      </div>
+
+      <Dialog
+        open={isRevokeConfirmOpen}
+        onOpenChange={setIsRevokeConfirmOpen}
+      >
+        <DialogContent showCloseButton={pendingAction !== "session"}>
+          <DialogHeader>
+            <DialogTitle>{t.confirmSessionLogout}</DialogTitle>
+            <DialogDescription>
+              {t.confirmSessionLogoutDescription}
+            </DialogDescription>
+          </DialogHeader>
+          {pendingSession ? (
+            <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+              <p className="font-medium">{formatSessionTitle(pendingSession, t)}</p>
+              <p className="mt-1 text-muted-foreground">
+                {formatSessionMeta(pendingSession, t)}
+              </p>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <DialogClose
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={pendingAction === "session"}
+                />
+              }
+            >
+              {t.cancel}
+            </DialogClose>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={pendingAction === "session"}
+              onClick={confirmRevokeSession}
+            >
+              {pendingAction === "session"
+                ? t.sessionLogoutPending
+                : t.logoutDevice}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isLogoutOthersConfirmOpen}
+        onOpenChange={setIsLogoutOthersConfirmOpen}
+      >
+        <DialogContent showCloseButton={pendingAction !== "others"}>
+          <DialogHeader>
+            <DialogTitle>{t.confirmLogoutOtherDevices}</DialogTitle>
+            <DialogDescription>
+              {t.confirmLogoutOtherDevicesDescription}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={pendingAction === "others"}
+                />
+              }
+            >
+              {t.cancel}
+            </DialogClose>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={pendingAction === "others"}
+              onClick={confirmLogoutOthers}
+            >
+              {pendingAction === "others"
+                ? t.sessionLogoutPending
+                : t.logoutOtherDevices}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -694,6 +934,108 @@ function AccountInfoItem({
       </div>
     </div>
   );
+}
+
+function SessionListItem({
+  isPending,
+  onLogout,
+  session,
+  t,
+}: {
+  isPending: boolean;
+  onLogout: () => void;
+  session: UserSessionItem;
+  t: Messages;
+}) {
+  return (
+    <div className="rounded-lg border bg-muted/20 p-3">
+      <div className="flex items-start gap-3">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-background">
+          {session.isCurrent ? (
+            <ShieldCheckIcon className="size-4 text-primary" />
+          ) : (
+            <MonitorSmartphoneIcon className="size-4 text-muted-foreground" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="truncate text-sm font-medium">
+              {formatSessionTitle(session, t)}
+            </p>
+            {session.isCurrent ? (
+              <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                {t.thisDevice}
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1 break-words text-xs text-muted-foreground">
+            {formatSessionMeta(session, t)}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t.lastActive}: {formatDateTime(session.lastActiveAt)}
+          </p>
+        </div>
+        {!session.isCurrent ? (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={t.logoutDevice}
+                  disabled={isPending}
+                  onClick={onLogout}
+                />
+              }
+            >
+              <LogOutIcon />
+            </TooltipTrigger>
+            <TooltipContent>{t.logoutDevice}</TooltipContent>
+          </Tooltip>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function SessionSkeleton() {
+  return (
+    <div className="rounded-lg border bg-muted/20 p-3">
+      <div className="flex items-start gap-3">
+        <Skeleton className="size-9 shrink-0 rounded-lg" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-1/2" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function formatSessionTitle(session: UserSessionItem, t: Messages) {
+  const browser = session.browser ?? t.unknownBrowser;
+  const operatingSystem = session.operatingSystem ?? t.unknownOs;
+
+  return `${browser} ${t.onDevice} ${operatingSystem}`;
+}
+
+function formatSessionMeta(session: UserSessionItem, t: Messages) {
+  const parts = [
+    session.deviceName,
+    session.ipAddress,
+    `${t.loginAt}: ${formatDateTime(session.loginAt)}`,
+  ].filter(Boolean);
+
+  return parts.join(" - ");
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 function StatusMessage({

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import {
   changePassword,
@@ -29,7 +30,6 @@ export function useProfileSettings(user: AuthUser) {
   const passwordFormRef = React.useRef<HTMLFormElement>(null);
   const [profileUser, setProfileUser] = React.useState(user);
   const [avatarError, setAvatarError] = React.useState<string | null>(null);
-  const [avatarSuccess, setAvatarSuccess] = React.useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = React.useState(false);
   const [isUsernameDialogOpen, setIsUsernameDialogOpen] = React.useState(false);
   const [isUsernameConfirmOpen, setIsUsernameConfirmOpen] = React.useState(false);
@@ -40,12 +40,8 @@ export function useProfileSettings(user: AuthUser) {
     null,
   );
   const [usernameError, setUsernameError] = React.useState<string | null>(null);
-  const [usernameSuccess, setUsernameSuccess] = React.useState<string | null>(null);
   const [isUpdatingUsername, setIsUpdatingUsername] = React.useState(false);
   const [profileDetailsError, setProfileDetailsError] = React.useState<
-    string | null
-  >(null);
-  const [profileDetailsSuccess, setProfileDetailsSuccess] = React.useState<
     string | null
   >(null);
   const [isProfileDetailsConfirmOpen, setIsProfileDetailsConfirmOpen] =
@@ -55,7 +51,6 @@ export function useProfileSettings(user: AuthUser) {
   const [isUpdatingProfileDetails, setIsUpdatingProfileDetails] =
     React.useState(false);
   const [passwordError, setPasswordError] = React.useState<string | null>(null);
-  const [passwordSuccess, setPasswordSuccess] = React.useState<string | null>(null);
   const [isPasswordConfirmOpen, setIsPasswordConfirmOpen] =
     React.useState(false);
   const [pendingPassword, setPendingPassword] =
@@ -75,7 +70,6 @@ export function useProfileSettings(user: AuthUser) {
     }
 
     setAvatarError(null);
-    setAvatarSuccess(null);
 
     if (!allowedAvatarTypes.has(file.type)) {
       setAvatarError(t.avatarInvalidType);
@@ -94,10 +88,10 @@ export function useProfileSettings(user: AuthUser) {
     try {
       const payload = await uploadAvatar(file);
       setProfileUser(payload.user);
-      setAvatarSuccess(t.avatarChanged);
+      toast.success(t.avatarChanged);
       router.refresh();
     } catch (error) {
-      setAvatarError(getApiErrorMessage(error, t.avatarChangeFailed));
+      toast.error(getApiErrorMessage(error, t.avatarChangeFailed));
     } finally {
       setIsUploadingAvatar(false);
       input.value = "";
@@ -107,7 +101,6 @@ export function useProfileSettings(user: AuthUser) {
   function openUsernameDialog() {
     setUsernameDraft(profileUser.username ?? "");
     setUsernameError(null);
-    setUsernameSuccess(null);
     setIsUsernameDialogOpen(true);
   }
 
@@ -140,7 +133,6 @@ export function useProfileSettings(user: AuthUser) {
 
   async function confirmUsernameChange() {
     setUsernameError(null);
-    setUsernameSuccess(null);
     setIsUpdatingUsername(true);
 
     try {
@@ -148,7 +140,7 @@ export function useProfileSettings(user: AuthUser) {
         username: pendingUsername,
       });
       setProfileUser(payload.user);
-      setUsernameSuccess(t.usernameChanged);
+      toast.success(t.usernameChanged);
       setUsernameDraft(payload.user.username ?? "");
       setPendingUsername(null);
       setIsUsernameConfirmOpen(false);
@@ -167,7 +159,6 @@ export function useProfileSettings(user: AuthUser) {
   ) {
     event.preventDefault();
     setProfileDetailsError(null);
-    setProfileDetailsSuccess(null);
 
     const formData = new FormData(event.currentTarget);
     const birthDate = String(formData.get("birthDate") ?? "").trim();
@@ -191,13 +182,12 @@ export function useProfileSettings(user: AuthUser) {
     }
 
     setProfileDetailsError(null);
-    setProfileDetailsSuccess(null);
     setIsUpdatingProfileDetails(true);
 
     try {
       const payload = await updateProfileDetails(pendingProfileDetails);
       setProfileUser(payload.user);
-      setProfileDetailsSuccess(t.profileDetailsChanged);
+      toast.success(t.profileDetailsChanged);
       setPendingProfileDetails(null);
       setIsProfileDetailsConfirmOpen(false);
       router.refresh();
@@ -214,7 +204,6 @@ export function useProfileSettings(user: AuthUser) {
   async function handlePasswordSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPasswordError(null);
-    setPasswordSuccess(null);
 
     const formData = new FormData(event.currentTarget);
     const currentPassword = String(formData.get("currentPassword") ?? "");
@@ -239,14 +228,13 @@ export function useProfileSettings(user: AuthUser) {
     }
 
     setPasswordError(null);
-    setPasswordSuccess(null);
     setIsChangingPassword(true);
 
     try {
       const payload = await changePassword(pendingPassword);
       setProfileUser(payload.user);
       passwordFormRef.current?.reset();
-      setPasswordSuccess(t.passwordChanged);
+      toast.success(t.passwordChanged);
       setPendingPassword(null);
       setIsPasswordConfirmOpen(false);
       router.refresh();
@@ -289,7 +277,7 @@ export function useProfileSettings(user: AuthUser) {
       router.replace("/login");
       router.refresh();
     } catch (error) {
-      setDeleteError(getApiErrorMessage(error, t.deleteAccountFailed));
+      toast.error(getApiErrorMessage(error, t.deleteAccountFailed));
       setIsDeleteConfirmOpen(false);
     } finally {
       setIsDeleting(false);
@@ -298,7 +286,6 @@ export function useProfileSettings(user: AuthUser) {
 
   return {
     avatarError,
-    avatarSuccess,
     deleteConfirmation,
     deleteError,
     fileInputRef,
@@ -325,12 +312,10 @@ export function useProfileSettings(user: AuthUser) {
     isUploadingAvatar,
     passwordError,
     passwordFormRef,
-    passwordSuccess,
     pendingPassword,
     pendingUsername,
     profileUser,
     profileDetailsError,
-    profileDetailsSuccess,
     pendingProfileDetails,
     openUsernameDialog,
     setIsDeleteConfirmOpen,
@@ -342,6 +327,5 @@ export function useProfileSettings(user: AuthUser) {
     t,
     usernameDraft,
     usernameError,
-    usernameSuccess,
   };
 }

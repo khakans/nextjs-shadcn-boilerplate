@@ -17,16 +17,20 @@ export function getJwtSecret() {
 }
 
 export function getAccessTokenExpiresIn() {
-  return process.env.ACCESS_TOKEN_EXPIRES_IN ?? "1h";
+  return parseDurationSeconds(process.env.ACCESS_TOKEN_EXPIRES_IN, 60 * 60);
+}
+
+export function getAccessTokenExpiresAt() {
+  return Math.floor(Date.now() / 1000) + getAccessTokenExpiresIn();
 }
 
 export function getAccessTokenMaxAge() {
-  return parseDurationToSeconds(getAccessTokenExpiresIn(), 60 * 60);
+  return getAccessTokenExpiresIn();
 }
 
 export function getRefreshTokenMaxAge() {
-  return parseDurationToSeconds(
-    process.env.REFRESH_TOKEN_EXPIRES_IN ?? "30d",
+  return parseDurationSeconds(
+    process.env.REFRESH_TOKEN_EXPIRES_IN,
     60 * 60 * 24 * 30,
   );
 }
@@ -99,26 +103,16 @@ function normalizeGoogleClientSecret(clientSecret: string) {
   );
 }
 
-function parseDurationToSeconds(duration: string, fallbackSeconds: number) {
-  const match = duration.match(/^(\d+)([smhd])$/);
-
-  if (!match) {
+function parseDurationSeconds(value: string | undefined, fallbackSeconds: number) {
+  if (!value) {
     return fallbackSeconds;
   }
 
-  const value = Number(match[1]);
-  const unit = match[2];
+  const seconds = Number(value);
 
-  switch (unit) {
-    case "s":
-      return value;
-    case "m":
-      return value * 60;
-    case "h":
-      return value * 60 * 60;
-    case "d":
-      return value * 60 * 60 * 24;
-    default:
-      return fallbackSeconds;
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return fallbackSeconds;
   }
+
+  return Math.floor(seconds);
 }

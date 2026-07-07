@@ -7,9 +7,8 @@ import {
 import { ApiError } from "@/lib/api-response";
 import {
   clearAuthCookies,
-  invalidateUserAuthSessions,
   refreshAuthSession,
-  revokeCurrentRefreshToken,
+  revokeCurrentAuthSession,
 } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
@@ -111,14 +110,7 @@ export async function loginService(input: LoginRequest) {
 }
 
 export async function logoutService() {
-  const user = await getCurrentUser();
-
-  if (user) {
-    await invalidateUserAuthSessions(user.id);
-  } else {
-    await revokeCurrentRefreshToken();
-  }
-
+  await revokeCurrentAuthSession();
   await clearAuthCookies();
 }
 
@@ -132,8 +124,8 @@ export async function currentUserService() {
   return user;
 }
 
-export async function refreshService() {
-  const sessionUser = await refreshAuthSession();
+export async function refreshService(request?: Request) {
+  const sessionUser = await refreshAuthSession(request);
 
   if (!sessionUser) {
     throw new ApiError("Unauthorized.", 401);

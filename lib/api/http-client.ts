@@ -1,5 +1,17 @@
 import { apiPath } from "@/lib/api-paths";
 
+type ApiResponseEnvelope<T> =
+  | {
+      status: "success";
+      message: string;
+      data: T;
+    }
+  | {
+      status: "error";
+      message: string;
+      data: null;
+    };
+
 export class ApiClientError extends Error {
   constructor(
     message: string,
@@ -21,7 +33,7 @@ export async function apiRequest<T>(
     throw new ApiClientError(getErrorMessage(payload), response.status, payload);
   }
 
-  return payload as T;
+  return unwrapApiResponse<T>(payload);
 }
 
 export function getApiErrorMessage(error: unknown, fallback: string) {
@@ -40,6 +52,15 @@ function getErrorMessage(payload: unknown) {
   if (
     payload &&
     typeof payload === "object" &&
+    "message" in payload &&
+    typeof payload.message === "string"
+  ) {
+    return payload.message;
+  }
+
+  if (
+    payload &&
+    typeof payload === "object" &&
     "error" in payload &&
     typeof payload.error === "string"
   ) {
@@ -47,4 +68,21 @@ function getErrorMessage(payload: unknown) {
   }
 
   return "Request failed.";
+}
+
+function unwrapApiResponse<T>(payload: unknown) {
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "status" in payload &&
+    "data" in payload
+  ) {
+    const response = payload as ApiResponseEnvelope<T>;
+
+    if (response.status === "success") {
+      return response.data;
+    }
+  }
+
+  return payload as T;
 }

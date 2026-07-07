@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sidebar";
 import {
   AccountInfoSection,
+  ActiveSessionsSection,
   AvatarProfileSection,
   DeleteAccountSection,
   PasswordSection,
@@ -49,7 +50,6 @@ export function ProfileShell({ user }: { user: AuthUser }) {
         <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
           <AvatarProfileSection
             avatarError={profile.avatarError}
-            avatarSuccess={profile.avatarSuccess}
             fileInputRef={profile.fileInputRef}
             isUploadingAvatar={profile.isUploadingAvatar}
             onAvatarChange={profile.handleAvatarChange}
@@ -62,7 +62,6 @@ export function ProfileShell({ user }: { user: AuthUser }) {
               <AccountInfoSection
                 onEditUsername={profile.openUsernameDialog}
                 t={profile.t}
-                usernameSuccess={profile.usernameSuccess}
                 user={profile.profileUser}
               />
               <UsernameDialog
@@ -92,22 +91,23 @@ export function ProfileShell({ user }: { user: AuthUser }) {
                 onConfirm={profile.confirmProfileDetailsChange}
                 onConfirmOpenChange={profile.setIsProfileDetailsConfirmOpen}
                 onSubmit={profile.handleProfileDetailsSubmit}
-                success={profile.profileDetailsSuccess}
                 t={profile.t}
                 user={profile.profileUser}
               />
             </div>
-            <PasswordSection
-              confirmOpen={profile.isPasswordConfirmOpen}
-              error={profile.passwordError}
-              formRef={profile.passwordFormRef}
-              isPending={profile.isChangingPassword}
-              onConfirm={profile.confirmPasswordChange}
-              onConfirmOpenChange={profile.setIsPasswordConfirmOpen}
-              onSubmit={profile.handlePasswordSubmit}
-              success={profile.passwordSuccess}
-              t={profile.t}
-            />
+            <div className="grid gap-6">
+              <PasswordSection
+                confirmOpen={profile.isPasswordConfirmOpen}
+                error={profile.passwordError}
+                formRef={profile.passwordFormRef}
+                isPending={profile.isChangingPassword}
+                onConfirm={profile.confirmPasswordChange}
+                onConfirmOpenChange={profile.setIsPasswordConfirmOpen}
+                onSubmit={profile.handlePasswordSubmit}
+                t={profile.t}
+              />
+              <ActiveSessionsSection t={profile.t} />
+            </div>
           </div>
 
           <DeleteAccountSection

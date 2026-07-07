@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import {
   getAccessTokenFromCookie,
+  getCurrentUserSessionId,
   verifyAccessToken,
 } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -70,6 +71,15 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       !user.isActive ||
       user.email !== payload.email ||
       user.tokenVersion !== payload.tokenVersion
+    ) {
+      return null;
+    }
+
+    const currentSessionId = await getCurrentUserSessionId(user.id);
+
+    if (
+      !currentSessionId ||
+      (payload.sessionId && payload.sessionId !== currentSessionId)
     ) {
       return null;
     }

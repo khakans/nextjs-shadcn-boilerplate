@@ -11,6 +11,15 @@ export type SignupRequest = {
   password: string;
 };
 
+export type ForgotPasswordRequest = {
+  email: string;
+};
+
+export type ResetPasswordRequest = {
+  token: string;
+  password: string;
+};
+
 type RequestParseResult<T> =
   | {
       ok: true;
@@ -32,6 +41,15 @@ const signupSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters."),
 });
 
+const forgotPasswordSchema = z.object({
+  email: z.email("Enter a valid email address.").trim().toLowerCase(),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().trim().min(32, "Reset token is required."),
+  password: z.string().min(8, "Password must be at least 8 characters."),
+});
+
 export async function readJsonBody(request: Request) {
   return request.json().catch(() => null);
 }
@@ -46,6 +64,22 @@ export function parseSignupRequest(
   body: unknown,
 ): RequestParseResult<SignupRequest> {
   const result = signupSchema.safeParse(body);
+
+  return parseZodResult(result);
+}
+
+export function parseForgotPasswordRequest(
+  body: unknown,
+): RequestParseResult<ForgotPasswordRequest> {
+  const result = forgotPasswordSchema.safeParse(body);
+
+  return parseZodResult(result);
+}
+
+export function parseResetPasswordRequest(
+  body: unknown,
+): RequestParseResult<ResetPasswordRequest> {
+  const result = resetPasswordSchema.safeParse(body);
 
   return parseZodResult(result);
 }

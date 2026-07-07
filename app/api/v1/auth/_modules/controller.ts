@@ -6,7 +6,10 @@ import {
 } from "@/lib/api-response";
 import { assertSameOriginRequest } from "@/lib/auth/csrf";
 import { issueAuthSession } from "@/lib/auth/session";
-import { assertRateLimit, getClientIp } from "@/lib/auth/rate-limit";
+import {
+  assertApiRateLimit,
+  assertGlobalApiRateLimit,
+} from "@/lib/auth/rate-limit";
 
 import {
   parseLoginRequest,
@@ -24,7 +27,8 @@ import {
 export async function signupController(request: Request) {
   try {
     assertSameOriginRequest(request);
-    assertAuthRateLimit(request, "signup");
+    assertGlobalApiRateLimit(request);
+    assertApiRateLimit(request, "auth:signup");
 
     const body = await readJsonBody(request);
     const parsed = parseSignupRequest(body);
@@ -34,7 +38,7 @@ export async function signupController(request: Request) {
     }
 
     const user = await signupService(parsed.data);
-    await issueAuthSession(user);
+    await issueAuthSession(user, request);
 
     return apiCreated({ user });
   } catch (error) {
@@ -45,7 +49,8 @@ export async function signupController(request: Request) {
 export async function loginController(request: Request) {
   try {
     assertSameOriginRequest(request);
-    assertAuthRateLimit(request, "login");
+    assertGlobalApiRateLimit(request);
+    assertApiRateLimit(request, "auth:login");
 
     const body = await readJsonBody(request);
     const parsed = parseLoginRequest(body);
@@ -55,7 +60,7 @@ export async function loginController(request: Request) {
     }
 
     const user = await loginService(parsed.data);
-    await issueAuthSession(user);
+    await issueAuthSession(user, request);
 
     return apiOk({ user });
   } catch (error) {
@@ -66,6 +71,7 @@ export async function loginController(request: Request) {
 export async function logoutController(request: Request) {
   try {
     assertSameOriginRequest(request);
+    assertGlobalApiRateLimit(request);
     await logoutService();
 
     return apiOk({ ok: true });
@@ -77,9 +83,10 @@ export async function logoutController(request: Request) {
 export async function refreshController(request: Request) {
   try {
     assertSameOriginRequest(request);
-    assertAuthRateLimit(request, "refresh");
+    assertGlobalApiRateLimit(request);
+    assertApiRateLimit(request, "auth:refresh");
 
-    const user = await refreshService();
+    const user = await refreshService(request);
 
     return apiOk({ user });
   } catch (error) {
@@ -87,8 +94,9 @@ export async function refreshController(request: Request) {
   }
 }
 
-export async function currentUserController() {
+export async function currentUserController(request: Request) {
   try {
+    assertGlobalApiRateLimit(request);
     const user = await currentUserService();
 
     return apiOk({ user });
@@ -99,15 +107,4 @@ export async function currentUserController() {
 
 function handleAuthError(error: unknown) {
   return handleApiError(error);
-}
-
-function assertAuthRateLimit(
-  request: Request,
-  action: "login" | "signup" | "refresh",
-) {
-  assertRateLimit({
-    key: `auth:${action}:${getClientIp(request)}`,
-    limit: action === "signup" ? 5 : 10,
-    windowMs: 60 * 1000,
-  });
 }

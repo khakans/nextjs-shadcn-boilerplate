@@ -48,7 +48,7 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL("/auth/link-google", request.url));
     }
 
-    await issueAuthSession(result.user);
+    await issueAuthSession(result.user, request);
 
     return NextResponse.redirect(new URL("/", request.url));
   } catch (error) {

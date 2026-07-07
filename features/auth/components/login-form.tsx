@@ -54,12 +54,12 @@ export function LoginForm({
         <Field>
           <div className="flex items-center">
             <FieldLabel htmlFor="password">{t.password}</FieldLabel>
-            <a
-              href="#"
+            <Link
+              href="/forgot-password"
               className="ml-auto text-sm underline-offset-4 hover:underline"
             >
               {t.forgotPassword}
-            </a>
+            </Link>
           </div>
           <Input id="password" name="password" type="password" required />
         </Field>

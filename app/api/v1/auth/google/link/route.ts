@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
     const user = await linkGoogleAccount();
 
-    await issueAuthSession(user);
+    await issueAuthSession(user, request);
   } catch (error) {
     if (error instanceof ApiError) {
       redirect("/login?authError=google");

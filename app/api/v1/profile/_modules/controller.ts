@@ -1,5 +1,9 @@
 import { ApiError, apiOk, handleApiError } from "@/lib/api-response";
 import { assertSameOriginRequest } from "@/lib/auth/csrf";
+import {
+  assertApiRateLimit,
+  assertGlobalApiRateLimit,
+} from "@/lib/auth/rate-limit";
 
 import {
   parseAvatarRequest,
@@ -17,6 +21,8 @@ import {
 export async function deleteProfileController(request: Request) {
   try {
     assertSameOriginRequest(request);
+    assertGlobalApiRateLimit(request);
+    assertApiRateLimit(request, "profile:mutation");
     await deleteProfileService();
 
     return apiOk({ ok: true });
@@ -28,6 +34,8 @@ export async function deleteProfileController(request: Request) {
 export async function updateProfileController(request: Request) {
   try {
     assertSameOriginRequest(request);
+    assertGlobalApiRateLimit(request);
+    assertApiRateLimit(request, "profile:mutation");
 
     const body = await readJsonBody(request);
     const parsed = parseProfileUpdateRequest(body);
@@ -47,6 +55,8 @@ export async function updateProfileController(request: Request) {
 export async function updateAvatarController(request: Request) {
   try {
     assertSameOriginRequest(request);
+    assertGlobalApiRateLimit(request);
+    assertApiRateLimit(request, "profile:avatar");
 
     const parsed = await parseAvatarRequest(request);
 
@@ -65,6 +75,8 @@ export async function updateAvatarController(request: Request) {
 export async function changePasswordController(request: Request) {
   try {
     assertSameOriginRequest(request);
+    assertGlobalApiRateLimit(request);
+    assertApiRateLimit(request, "profile:password");
 
     const body = await readJsonBody(request);
     const parsed = parsePasswordRequest(body);
@@ -73,7 +85,7 @@ export async function changePasswordController(request: Request) {
       return handleApiError(new ApiError(parsed.error, 400));
     }
 
-    const user = await changePasswordService(parsed.data);
+    const user = await changePasswordService(parsed.data, request);
 
     return apiOk({ user });
   } catch (error) {

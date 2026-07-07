@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { signup } from "@/features/auth/api/auth-client";
 import { getApiErrorMessage } from "@/lib/api/http-client";
@@ -39,7 +40,9 @@ export function useSignupForm() {
       router.push("/");
       router.refresh();
     } catch (error) {
-      setError(getApiErrorMessage(error, t.signupFailed));
+      const message = getApiErrorMessage(error, t.signupFailed);
+      setError(message);
+      toast.error(message);
     } finally {
       setIsPending(false);
     }

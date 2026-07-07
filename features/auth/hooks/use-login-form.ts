@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { login } from "@/features/auth/api/auth-client";
 import { getApiErrorMessage } from "@/lib/api/http-client";
@@ -20,6 +21,12 @@ export function useLoginForm({ authError }: UseLoginFormOptions) {
   const [isPending, setIsPending] = React.useState(false);
   const displayError = error ?? (authError === "google" ? t.loginGoogleError : null);
 
+  React.useEffect(() => {
+    if (authError === "google") {
+      toast.error(t.loginGoogleError);
+    }
+  }, [authError, t.loginGoogleError]);
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -35,7 +42,9 @@ export function useLoginForm({ authError }: UseLoginFormOptions) {
       router.push("/");
       router.refresh();
     } catch (error) {
-      setError(getApiErrorMessage(error, t.loginFailed));
+      const message = getApiErrorMessage(error, t.loginFailed);
+      setError(message);
+      toast.error(message);
     } finally {
       setIsPending(false);
     }

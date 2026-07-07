@@ -126,7 +126,10 @@ export async function updateAvatarService(input: AvatarRequest) {
   return toAuthUser(updatedUser);
 }
 
-export async function changePasswordService(input: PasswordRequest) {
+export async function changePasswordService(
+  input: PasswordRequest,
+  request?: Request,
+) {
   const sessionUser = await requireProfileUser();
   const user = await prisma.user.findUnique({
     where: {
@@ -186,11 +189,14 @@ export async function changePasswordService(input: PasswordRequest) {
   });
 
   await revokeUserRefreshTokens(updatedUser.id);
-  await issueAuthSession({
-    id: updatedUser.id,
-    email: updatedUser.email,
-    tokenVersion: updatedUser.tokenVersion,
-  });
+  await issueAuthSession(
+    {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      tokenVersion: updatedUser.tokenVersion,
+    },
+    request,
+  );
 
   return toAuthUser(updatedUser);
 }
