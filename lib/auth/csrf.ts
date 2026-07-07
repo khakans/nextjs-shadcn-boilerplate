@@ -1,4 +1,5 @@
 import { ApiError } from "@/lib/api-response";
+import { getBearerToken } from "@/lib/auth/bearer";
 import { CSRF_SAFE_METHODS } from "@/lib/auth/config";
 
 export function assertSameOriginRequest(request: Request) {
@@ -25,6 +26,14 @@ export function assertSameOriginRequest(request: Request) {
   }
 
   throw new ApiError("Missing CSRF origin.", 403);
+}
+
+export function assertSameOriginOrBearerRequest(request: Request) {
+  if (getBearerToken(request)) {
+    return;
+  }
+
+  assertSameOriginRequest(request);
 }
 
 function assertAllowedUrl(value: string, host: string) {

@@ -1,5 +1,5 @@
 import { apiOk, handleApiError } from "@/lib/api-response";
-import { assertSameOriginRequest } from "@/lib/auth/csrf";
+import { assertSameOriginOrBearerRequest } from "@/lib/auth/csrf";
 import {
   assertApiRateLimit,
   assertGlobalApiRateLimit,
@@ -14,7 +14,7 @@ import {
 export async function listUserSessionsController(request: Request) {
   try {
     assertGlobalApiRateLimit(request);
-    const sessions = await listUserSessionsService();
+    const sessions = await listUserSessionsService(request);
 
     return apiOk({ sessions });
   } catch (error) {
@@ -27,12 +27,12 @@ export async function revokeUserSessionController(
   context: { params: Promise<{ sessionId: string }> },
 ) {
   try {
-    assertSameOriginRequest(request);
+    assertSameOriginOrBearerRequest(request);
     assertGlobalApiRateLimit(request);
     assertApiRateLimit(request, "auth:session-mutation");
 
     const { sessionId } = await context.params;
-    await revokeUserSessionService(sessionId);
+    await revokeUserSessionService(sessionId, request);
 
     return apiOk({ ok: true });
   } catch (error) {
@@ -42,10 +42,10 @@ export async function revokeUserSessionController(
 
 export async function logoutOtherUserSessionsController(request: Request) {
   try {
-    assertSameOriginRequest(request);
+    assertSameOriginOrBearerRequest(request);
     assertGlobalApiRateLimit(request);
     assertApiRateLimit(request, "auth:session-mutation");
-    await logoutOtherUserSessionsService();
+    await logoutOtherUserSessionsService(request);
 
     return apiOk({ ok: true });
   } catch (error) {

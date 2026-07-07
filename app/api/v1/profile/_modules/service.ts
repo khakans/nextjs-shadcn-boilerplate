@@ -1,21 +1,25 @@
 import { ApiError } from "@/lib/api-response";
 import {
   getCurrentUser,
+  getCurrentUserFromRequest,
   hashPassword,
   toAuthUser,
   verifyPassword,
 } from "@/lib/auth";
+import { getBearerToken } from "@/lib/auth/bearer";
 import {
   clearAuthCookies,
   issueAuthSession,
+  issueAuthSessionTokens,
   revokeUserRefreshTokens,
 } from "@/lib/auth/session";
+import type { IssuedAuthTokens } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
 import type { AvatarRequest, PasswordRequest, ProfileUpdateRequest } from "./request";
 
-export async function deleteProfileService() {
-  const user = await requireProfileUser();
+export async function deleteProfileService(request?: Request) {
+  const user = await requireProfileUser(request);
 
   await prisma.user.update({
     where: {
@@ -32,8 +36,11 @@ export async function deleteProfileService() {
   await clearAuthCookies();
 }
 
-export async function updateProfileService(input: ProfileUpdateRequest) {
-  const user = await requireProfileUser();
+export async function updateProfileService(
+  input: ProfileUpdateRequest,
+  request?: Request,
+) {
+  const user = await requireProfileUser(request);
 
   if ("username" in input && input.username && input.username !== user.username) {
     const existingUser = await prisma.user.findUnique({
@@ -98,8 +105,11 @@ export async function updateProfileService(input: ProfileUpdateRequest) {
   return toAuthUser(updatedUser);
 }
 
-export async function updateAvatarService(input: AvatarRequest) {
-  const user = await requireProfileUser();
+export async function updateAvatarService(
+  input: AvatarRequest,
+  request?: Request,
+) {
+  const user = await requireProfileUser(request);
   const buffer = Buffer.from(await input.avatar.arrayBuffer());
   const avatarUrl = `data:${input.avatar.type};base64,${buffer.toString("base64")}`;
   const updatedUser = await prisma.user.update({
@@ -130,7 +140,7 @@ export async function changePasswordService(
   input: PasswordRequest,
   request?: Request,
 ) {
-  const sessionUser = await requireProfileUser();
+  const sessionUser = await requireProfileUser(request);
   const user = await prisma.user.findUnique({
     where: {
       id: sessionUser.id,
@@ -189,20 +199,29 @@ export async function changePasswordService(
   });
 
   await revokeUserRefreshTokens(updatedUser.id);
-  await issueAuthSession(
-    {
-      id: updatedUser.id,
-      email: updatedUser.email,
-      tokenVersion: updatedUser.tokenVersion,
-    },
-    request,
-  );
+  const authSessionUser = {
+    id: updatedUser.id,
+    email: updatedUser.email,
+    tokenVersion: updatedUser.tokenVersion,
+  };
+  let tokens: IssuedAuthTokens | null = null;
 
-  return toAuthUser(updatedUser);
+  if (request && getBearerToken(request)) {
+    tokens = await issueAuthSessionTokens(authSessionUser, request);
+  } else {
+    await issueAuthSession(authSessionUser, request);
+  }
+
+  return {
+    user: toAuthUser(updatedUser),
+    tokens,
+  };
 }
 
-async function requireProfileUser() {
-  const user = await getCurrentUser();
+async function requireProfileUser(request?: Request) {
+  const user = request
+    ? await getCurrentUserFromRequest(request)
+    : await getCurrentUser();
 
   if (!user) {
     throw new ApiError("Unauthorized.", 401);

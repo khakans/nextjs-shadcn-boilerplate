@@ -14,6 +14,7 @@ import {
   getRefreshTokenExpiresAt,
   getRefreshTokenMaxAge,
 } from "@/lib/auth/config";
+import { getBearerToken } from "@/lib/auth/bearer";
 import { getClientIp } from "@/lib/auth/rate-limit";
 import { prisma } from "@/lib/prisma";
 
@@ -28,6 +29,18 @@ export type AuthSessionUser = {
   id: string;
   email: string;
   tokenVersion: number;
+};
+
+export type IssuedAuthTokens = {
+  accessToken: string;
+  accessTokenExpiresIn: number;
+  refreshToken: string;
+  refreshTokenExpiresIn: number;
+};
+
+export type RefreshAuthSessionResult = {
+  user: AuthSessionUser;
+  tokens: IssuedAuthTokens;
 };
 
 type RefreshTokenRecord = {
@@ -99,6 +112,16 @@ export async function getRefreshTokenFromCookie() {
 }
 
 export async function issueAuthSession(user: AuthSessionUser, request?: Request) {
+  const tokens = await issueAuthSessionTokens(user, request);
+
+  await setAccessTokenCookie(tokens.accessToken);
+  await setRefreshTokenCookie(tokens.refreshToken);
+}
+
+export async function issueAuthSessionTokens(
+  user: AuthSessionUser,
+  request?: Request,
+): Promise<IssuedAuthTokens> {
   const expiresAt = getRefreshTokenExpiresAt();
   const userSession = await createUserSession(user.id, expiresAt, request);
   const accessToken = await signAccessToken(user, userSession.id);
@@ -108,8 +131,12 @@ export async function issueAuthSession(user: AuthSessionUser, request?: Request)
     userSession.id,
   );
 
-  await setAccessTokenCookie(accessToken);
-  await setRefreshTokenCookie(refreshToken.token);
+  return {
+    accessToken,
+    accessTokenExpiresIn: getAccessTokenMaxAge(),
+    refreshToken: refreshToken.token,
+    refreshTokenExpiresIn: getRefreshTokenMaxAge(),
+  };
 }
 
 export async function refreshAuthSession(request?: Request) {
@@ -119,6 +146,23 @@ export async function refreshAuthSession(request?: Request) {
     return null;
   }
 
+  const result = await refreshAuthSessionTokens(token, request);
+
+  if (!result) {
+    await clearAuthCookies();
+    return null;
+  }
+
+  await setAccessTokenCookie(result.tokens.accessToken);
+  await setRefreshTokenCookie(result.tokens.refreshToken);
+
+  return result.user;
+}
+
+export async function refreshAuthSessionTokens(
+  token: string,
+  request?: Request,
+): Promise<RefreshAuthSessionResult | null> {
   const tokenHash = hashRefreshToken(token);
   const storedToken = await prisma.refreshToken.findUnique({
     where: {
@@ -149,13 +193,11 @@ export async function refreshAuthSession(request?: Request) {
   });
 
   if (!storedToken) {
-    await clearAuthCookies();
     return null;
   }
 
   if (storedToken.revokedAt) {
     await invalidateUserAuthSessions(storedToken.userId);
-    await clearAuthCookies();
     return null;
   }
 
@@ -164,7 +206,6 @@ export async function refreshAuthSession(request?: Request) {
   if (storedToken.expiresAt <= now || !storedToken.user.isActive) {
     await revokeRefreshTokenById(storedToken.id);
     await expireUserSessionById(storedToken.userSessionId);
-    await clearAuthCookies();
     return null;
   }
 
@@ -177,7 +218,6 @@ export async function refreshAuthSession(request?: Request) {
     ) {
       await revokeRefreshTokenById(storedToken.id);
       await expireUserSessionById(storedToken.userSession.id);
-      await clearAuthCookies();
       return null;
     }
   } else {
@@ -191,7 +231,6 @@ export async function refreshAuthSession(request?: Request) {
 
   if (!userSessionId) {
     await revokeRefreshTokenById(storedToken.id);
-    await clearAuthCookies();
     return null;
   }
 
@@ -234,10 +273,15 @@ export async function refreshAuthSession(request?: Request) {
   } satisfies AuthSessionUser;
   const accessToken = await signAccessToken(user, userSessionId);
 
-  await setAccessTokenCookie(accessToken);
-  await setRefreshTokenCookie(nextRefreshToken.token);
-
-  return user;
+  return {
+    user,
+    tokens: {
+      accessToken,
+      accessTokenExpiresIn: getAccessTokenMaxAge(),
+      refreshToken: nextRefreshToken.token,
+      refreshTokenExpiresIn: getRefreshTokenMaxAge(),
+    },
+  };
 }
 
 export async function clearAuthCookies() {
@@ -280,6 +324,20 @@ export async function revokeCurrentAuthSession() {
     return;
   }
 
+  await revokeAuthSessionByRefreshToken(token);
+}
+
+export async function revokeAuthSessionByAccessToken(token: string) {
+  const payload = await verifyAccessToken(token).catch(() => null);
+
+  if (!payload?.sessionId) {
+    return;
+  }
+
+  await revokeAuthSessionById(payload.sessionId, "LOGGED_OUT");
+}
+
+export async function revokeAuthSessionByRefreshToken(token: string) {
   const storedToken = await prisma.refreshToken.findUnique({
     where: {
       tokenHash: hashRefreshToken(token),
@@ -311,9 +369,10 @@ export async function revokeCurrentAuthSession() {
   }
 
   await prisma.$transaction([
-    prisma.userSession.update({
+    prisma.userSession.updateMany({
       where: {
         id: storedToken.userSessionId,
+        status: "ONLINE",
       },
       data: {
         status: "LOGGED_OUT",
@@ -332,6 +391,31 @@ export async function revokeCurrentAuthSession() {
       },
     }),
   ]);
+}
+
+export async function isActiveUserSession(
+  sessionId: string | null,
+  userId: string,
+) {
+  if (!sessionId) {
+    return false;
+  }
+
+  const session = await prisma.userSession.findFirst({
+    where: {
+      id: sessionId,
+      userId,
+      status: "ONLINE",
+      expiredAt: {
+        gt: new Date(),
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return Boolean(session);
 }
 
 export async function revokeUserRefreshTokens(userId: string) {
@@ -441,6 +525,30 @@ export async function getCurrentUserSessionId(userId?: string) {
   return storedToken.userSessionId;
 }
 
+export async function getCurrentUserSessionIdFromRequest(
+  request: Request,
+  userId?: string,
+) {
+  const token = getBearerToken(request);
+
+  if (!token) {
+    return getCurrentUserSessionId(userId);
+  }
+
+  const payload = await verifyAccessToken(token).catch(() => null);
+
+  if (
+    !payload ||
+    !payload.sessionId ||
+    (userId && payload.sub !== userId) ||
+    !(await isActiveUserSession(payload.sessionId, payload.sub))
+  ) {
+    return null;
+  }
+
+  return payload.sessionId;
+}
+
 async function createRefreshToken(
   userId: string,
   expiresAt: Date,
@@ -510,6 +618,37 @@ async function expireUserSessionById(id: string | null) {
       logoutAt: new Date(),
     },
   });
+}
+
+async function revokeAuthSessionById(
+  sessionId: string,
+  status: "LOGGED_OUT" | "REVOKED",
+) {
+  const now = new Date();
+
+  await prisma.$transaction([
+    prisma.userSession.updateMany({
+      where: {
+        id: sessionId,
+        status: "ONLINE",
+      },
+      data: {
+        status,
+        logoutAt: now,
+        lastActiveAt: now,
+      },
+    }),
+    prisma.refreshToken.updateMany({
+      where: {
+        userSessionId: sessionId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: now,
+        lastUsedAt: now,
+      },
+    }),
+  ]);
 }
 
 async function setAccessTokenCookie(token: string) {

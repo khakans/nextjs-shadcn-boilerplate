@@ -3,9 +3,11 @@ import "server-only";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 
+import { getBearerToken } from "@/lib/auth/bearer";
 import {
   getAccessTokenFromCookie,
   getCurrentUserSessionId,
+  isActiveUserSession,
   verifyAccessToken,
 } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -80,6 +82,63 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     if (
       !currentSessionId ||
       (payload.sessionId && payload.sessionId !== currentSessionId)
+    ) {
+      return null;
+    }
+
+    return toAuthUser(user);
+  } catch {
+    return null;
+  }
+}
+
+export async function getCurrentUserFromRequest(
+  request: Request,
+): Promise<AuthUser | null> {
+  const token = getBearerToken(request);
+
+  if (token) {
+    return getCurrentUserFromAccessToken(token);
+  }
+
+  return getCurrentUser();
+}
+
+export async function getCurrentUserFromAccessToken(
+  token: string,
+): Promise<AuthUser | null> {
+  try {
+    const payload = await verifyAccessToken(token);
+
+    if (!payload) {
+      return null;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: {
+        id: payload.sub,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        username: true,
+        avatarUrl: true,
+        birthDate: true,
+        birthPlace: true,
+        gender: true,
+        mobileNumber: true,
+        tokenVersion: true,
+        isActive: true,
+      },
+    });
+
+    if (
+      !user ||
+      !user.isActive ||
+      user.email !== payload.email ||
+      user.tokenVersion !== payload.tokenVersion ||
+      !(await isActiveUserSession(payload.sessionId, user.id))
     ) {
       return null;
     }

@@ -1,6 +1,9 @@
 import { ApiError } from "@/lib/api-response";
-import { getCurrentUser } from "@/lib/auth";
-import { getCurrentUserSessionId } from "@/lib/auth/session";
+import { getCurrentUser, getCurrentUserFromRequest } from "@/lib/auth";
+import {
+  getCurrentUserSessionId,
+  getCurrentUserSessionIdFromRequest,
+} from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
 export type UserSessionItem = {
@@ -18,9 +21,11 @@ export type UserSessionItem = {
   isCurrent: boolean;
 };
 
-export async function listUserSessionsService() {
-  const user = await requireSessionUser();
-  const currentSessionId = await getCurrentUserSessionId();
+export async function listUserSessionsService(request?: Request) {
+  const user = await requireSessionUser(request);
+  const currentSessionId = request
+    ? await getCurrentUserSessionIdFromRequest(request, user.id)
+    : await getCurrentUserSessionId(user.id);
 
   await expireOldUserSessions(user.id);
 
@@ -71,9 +76,14 @@ export async function listUserSessionsService() {
   })) satisfies UserSessionItem[];
 }
 
-export async function revokeUserSessionService(sessionId: string) {
-  const user = await requireSessionUser();
-  const currentSessionId = await getCurrentUserSessionId();
+export async function revokeUserSessionService(
+  sessionId: string,
+  request?: Request,
+) {
+  const user = await requireSessionUser(request);
+  const currentSessionId = request
+    ? await getCurrentUserSessionIdFromRequest(request, user.id)
+    : await getCurrentUserSessionId(user.id);
   const session = await prisma.userSession.findFirst({
     where: {
       userId: user.id,
@@ -96,9 +106,11 @@ export async function revokeUserSessionService(sessionId: string) {
   await revokeSessionsByIds([session.id], "REVOKED");
 }
 
-export async function logoutOtherUserSessionsService() {
-  const user = await requireSessionUser();
-  const currentSessionId = await getCurrentUserSessionId();
+export async function logoutOtherUserSessionsService(request?: Request) {
+  const user = await requireSessionUser(request);
+  const currentSessionId = request
+    ? await getCurrentUserSessionIdFromRequest(request, user.id)
+    : await getCurrentUserSessionId(user.id);
 
   if (!currentSessionId) {
     throw new ApiError("Current session not found.", 400);
@@ -141,8 +153,10 @@ async function expireOldUserSessions(userId: string) {
   });
 }
 
-async function requireSessionUser() {
-  const user = await getCurrentUser();
+async function requireSessionUser(request?: Request) {
+  const user = request
+    ? await getCurrentUserFromRequest(request)
+    : await getCurrentUser();
 
   if (!user) {
     throw new ApiError("Unauthorized.", 401);

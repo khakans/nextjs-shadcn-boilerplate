@@ -1,5 +1,5 @@
 import { ApiError, apiOk, handleApiError } from "@/lib/api-response";
-import { assertSameOriginRequest } from "@/lib/auth/csrf";
+import { assertSameOriginOrBearerRequest } from "@/lib/auth/csrf";
 import {
   assertApiRateLimit,
   assertGlobalApiRateLimit,
@@ -20,10 +20,10 @@ import {
 
 export async function deleteProfileController(request: Request) {
   try {
-    assertSameOriginRequest(request);
+    assertSameOriginOrBearerRequest(request);
     assertGlobalApiRateLimit(request);
     assertApiRateLimit(request, "profile:mutation");
-    await deleteProfileService();
+    await deleteProfileService(request);
 
     return apiOk({ ok: true });
   } catch (error) {
@@ -33,7 +33,7 @@ export async function deleteProfileController(request: Request) {
 
 export async function updateProfileController(request: Request) {
   try {
-    assertSameOriginRequest(request);
+    assertSameOriginOrBearerRequest(request);
     assertGlobalApiRateLimit(request);
     assertApiRateLimit(request, "profile:mutation");
 
@@ -44,7 +44,7 @@ export async function updateProfileController(request: Request) {
       return handleApiError(new ApiError(parsed.error, 400));
     }
 
-    const user = await updateProfileService(parsed.data);
+    const user = await updateProfileService(parsed.data, request);
 
     return apiOk({ user });
   } catch (error) {
@@ -54,7 +54,7 @@ export async function updateProfileController(request: Request) {
 
 export async function updateAvatarController(request: Request) {
   try {
-    assertSameOriginRequest(request);
+    assertSameOriginOrBearerRequest(request);
     assertGlobalApiRateLimit(request);
     assertApiRateLimit(request, "profile:avatar");
 
@@ -64,7 +64,7 @@ export async function updateAvatarController(request: Request) {
       return handleApiError(new ApiError(parsed.error, 400));
     }
 
-    const user = await updateAvatarService(parsed.data);
+    const user = await updateAvatarService(parsed.data, request);
 
     return apiOk({ user });
   } catch (error) {
@@ -74,7 +74,7 @@ export async function updateAvatarController(request: Request) {
 
 export async function changePasswordController(request: Request) {
   try {
-    assertSameOriginRequest(request);
+    assertSameOriginOrBearerRequest(request);
     assertGlobalApiRateLimit(request);
     assertApiRateLimit(request, "profile:password");
 
@@ -85,9 +85,12 @@ export async function changePasswordController(request: Request) {
       return handleApiError(new ApiError(parsed.error, 400));
     }
 
-    const user = await changePasswordService(parsed.data, request);
+    const result = await changePasswordService(parsed.data, request);
 
-    return apiOk({ user });
+    return apiOk({
+      user: result.user,
+      ...(result.tokens ?? {}),
+    });
   } catch (error) {
     return handleProfileError(error);
   }

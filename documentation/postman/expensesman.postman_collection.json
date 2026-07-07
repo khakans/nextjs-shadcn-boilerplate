@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "9b4e7c6b-f857-48c1-9d49-f08d2e174c57",
     "name": "Expensesman API",
-    "description": "Postman collection for Expensesman API. Responses use the envelope `{ status, message, data }`. Authentication uses HttpOnly cookies, so keep Postman's cookie jar enabled.",
+    "description": "Postman collection for Expensesman API. Responses use the envelope `{ status, message, data }`. Web authentication uses HttpOnly cookies, so keep Postman's cookie jar enabled. Mobile authentication returns bearer tokens in JSON.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -105,7 +105,12 @@
           "name": "Current User",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mobile_access_token}}"
+              }
+            ],
             "url": {
               "raw": "{{base_url}}/auth/me",
               "host": [
@@ -115,7 +120,8 @@
                 "auth",
                 "me"
               ]
-            }
+            },
+            "description": "Can be authenticated with web HttpOnly cookies or `Authorization: Bearer {{mobile_access_token}}` for mobile clients."
           }
         },
         {
@@ -146,6 +152,10 @@
             "method": "POST",
             "header": [
               {
+                "key": "Authorization",
+                "value": "Bearer {{mobile_access_token}}"
+              },
+              {
                 "key": "Origin",
                 "value": "{{app_url}}"
               }
@@ -159,7 +169,8 @@
                 "auth",
                 "logout"
               ]
-            }
+            },
+            "description": "Can be authenticated with web HttpOnly cookies or `Authorization: Bearer {{mobile_access_token}}` for mobile clients."
           }
         },
         {
@@ -245,6 +256,240 @@
       ]
     },
     {
+      "name": "Mobile Auth",
+      "description": "Token-based auth endpoints for mobile apps. These endpoints do not use browser cookies or CSRF origin checks. Store refresh tokens in secure device storage.",
+      "item": [
+        {
+          "name": "Mobile Signup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && pm.response.text()) {",
+                  "  const json = pm.response.json();",
+                  "  const data = json.data || {};",
+                  "  if (data.accessToken) pm.environment.set('mobile_access_token', data.accessToken);",
+                  "  if (data.refreshToken) pm.environment.set('mobile_refresh_token', data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{name}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/mobile/auth/signup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mobile",
+                "auth",
+                "signup"
+              ]
+            },
+            "description": "Creates a LOCAL user and returns accessToken plus refreshToken in the JSON response."
+          }
+        },
+        {
+          "name": "Mobile Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && pm.response.text()) {",
+                  "  const json = pm.response.json();",
+                  "  const data = json.data || {};",
+                  "  if (data.accessToken) pm.environment.set('mobile_access_token', data.accessToken);",
+                  "  if (data.refreshToken) pm.environment.set('mobile_refresh_token', data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/mobile/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mobile",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Logs in without cookies. Saves mobile_access_token and mobile_refresh_token to the environment."
+          }
+        },
+        {
+          "name": "Mobile Google Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && pm.response.text()) {",
+                  "  const json = pm.response.json();",
+                  "  const data = json.data || {};",
+                  "  if (data.accessToken) pm.environment.set('mobile_access_token', data.accessToken);",
+                  "  if (data.refreshToken) pm.environment.set('mobile_refresh_token', data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"{{google_id_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/mobile/auth/google",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mobile",
+                "auth",
+                "google"
+              ]
+            },
+            "description": "Authenticates a mobile Google ID token and returns API tokens. Existing LOCAL accounts must be linked to Google before this endpoint can sign them in."
+          }
+        },
+        {
+          "name": "Mobile Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mobile_access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mobile/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mobile",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Reads the current user using Authorization: Bearer {{mobile_access_token}}."
+          }
+        },
+        {
+          "name": "Mobile Refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && pm.response.text()) {",
+                  "  const json = pm.response.json();",
+                  "  const data = json.data || {};",
+                  "  if (data.accessToken) pm.environment.set('mobile_access_token', data.accessToken);",
+                  "  if (data.refreshToken) pm.environment.set('mobile_refresh_token', data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{mobile_refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/mobile/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mobile",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Rotates the refresh token and returns a new accessToken plus refreshToken."
+          }
+        },
+        {
+          "name": "Mobile Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{mobile_refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/mobile/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mobile",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Revokes the mobile session associated with the provided refresh token."
+          }
+        }
+      ]
+    },
+    {
       "name": "Sessions",
       "item": [
         {
@@ -267,7 +512,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mobile_access_token}}"
+              }
+            ],
             "url": {
               "raw": "{{base_url}}/auth/sessions",
               "host": [
@@ -278,7 +528,7 @@
                 "sessions"
               ]
             },
-            "description": "Lists active sessions for the current user. Saves the first non-current sessionId into `session_id` when available."
+            "description": "Lists active sessions for the current user. Saves the first non-current sessionId into `session_id` when available.\n\nCan be authenticated with web HttpOnly cookies or `Authorization: Bearer {{mobile_access_token}}` for mobile clients."
           }
         },
         {
@@ -286,6 +536,10 @@
           "request": {
             "method": "DELETE",
             "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mobile_access_token}}"
+              },
               {
                 "key": "Origin",
                 "value": "{{app_url}}"
@@ -302,7 +556,7 @@
                 "{{session_id}}"
               ]
             },
-            "description": "Revokes another active session. The current session cannot be revoked through this endpoint."
+            "description": "Revokes another active session. The current session cannot be revoked through this endpoint.\n\nCan be authenticated with web HttpOnly cookies or `Authorization: Bearer {{mobile_access_token}}` for mobile clients."
           }
         },
         {
@@ -310,6 +564,10 @@
           "request": {
             "method": "POST",
             "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mobile_access_token}}"
+              },
               {
                 "key": "Origin",
                 "value": "{{app_url}}"
@@ -325,7 +583,8 @@
                 "sessions",
                 "logout-others"
               ]
-            }
+            },
+            "description": "Can be authenticated with web HttpOnly cookies or `Authorization: Bearer {{mobile_access_token}}` for mobile clients."
           }
         }
       ]
@@ -338,6 +597,10 @@
           "request": {
             "method": "PATCH",
             "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mobile_access_token}}"
+              },
               {
                 "key": "Origin",
                 "value": "{{app_url}}"
@@ -359,7 +622,8 @@
               "path": [
                 "profile"
               ]
-            }
+            },
+            "description": "Can be authenticated with web HttpOnly cookies or `Authorization: Bearer {{mobile_access_token}}` for mobile clients."
           }
         },
         {
@@ -367,6 +631,10 @@
           "request": {
             "method": "PATCH",
             "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mobile_access_token}}"
+              },
               {
                 "key": "Origin",
                 "value": "{{app_url}}"
@@ -388,7 +656,8 @@
               "path": [
                 "profile"
               ]
-            }
+            },
+            "description": "Can be authenticated with web HttpOnly cookies or `Authorization: Bearer {{mobile_access_token}}` for mobile clients."
           }
         },
         {
@@ -396,6 +665,10 @@
           "request": {
             "method": "PATCH",
             "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mobile_access_token}}"
+              },
               {
                 "key": "Origin",
                 "value": "{{app_url}}"
@@ -419,14 +692,34 @@
                 "password"
               ]
             },
-            "description": "After success, use `new_password` for subsequent login or swap environment password values."
-          }
+            "description": "After success, use `new_password` for subsequent login or swap environment password values.\n\nCan be authenticated with web HttpOnly cookies or `Authorization: Bearer {{mobile_access_token}}` for mobile clients.\n\nWhen called with bearer auth, the response may include a new accessToken and refreshToken after the password change."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && pm.response.text()) {",
+                  "  const json = pm.response.json();",
+                  "  const data = json.data || {};",
+                  "  if (data.accessToken) pm.environment.set('mobile_access_token', data.accessToken);",
+                  "  if (data.refreshToken) pm.environment.set('mobile_refresh_token', data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Upload Avatar",
           "request": {
             "method": "POST",
             "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mobile_access_token}}"
+              },
               {
                 "key": "Origin",
                 "value": "{{app_url}}"
@@ -452,7 +745,7 @@
                 "avatar"
               ]
             },
-            "description": "Set `avatar_file_path` in the environment to a local JPG or PNG path before sending."
+            "description": "Set `avatar_file_path` in the environment to a local JPG or PNG path before sending.\n\nCan be authenticated with web HttpOnly cookies or `Authorization: Bearer {{mobile_access_token}}` for mobile clients."
           }
         },
         {
@@ -460,6 +753,10 @@
           "request": {
             "method": "DELETE",
             "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mobile_access_token}}"
+              },
               {
                 "key": "Origin",
                 "value": "{{app_url}}"
@@ -474,7 +771,7 @@
                 "profile"
               ]
             },
-            "description": "Deactivates the current account and clears auth cookies."
+            "description": "Deactivates the current account and clears auth cookies.\n\nCan be authenticated with web HttpOnly cookies or `Authorization: Bearer {{mobile_access_token}}` for mobile clients."
           }
         }
       ]

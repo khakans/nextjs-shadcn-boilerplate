@@ -15,6 +15,7 @@ import { toAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const googleTokenEndpoint = "https://oauth2.googleapis.com/token";
+const googleTokenInfoEndpoint = "https://oauth2.googleapis.com/tokeninfo";
 const googleUserInfoEndpoint = "https://openidconnect.googleapis.com/v1/userinfo";
 
 type GoogleTokenResponse = {
@@ -32,6 +33,24 @@ type GoogleUserInfo = {
   name?: string;
   email?: string;
   email_verified?: boolean;
+  picture?: string;
+};
+
+type GoogleIdTokenInfo = {
+  aud?: string;
+  sub?: string;
+  name?: string;
+  email?: string;
+  email_verified?: boolean | string;
+  picture?: string;
+  error_description?: string;
+};
+
+type VerifiedGoogleProfile = {
+  sub: string;
+  name?: string;
+  email: string;
+  email_verified: boolean;
   picture?: string;
 };
 
@@ -60,6 +79,26 @@ export async function authenticateGoogleOAuth(
   const token = await exchangeCodeForToken(code, redirectUri);
   const profile = await fetchGoogleUserInfo(token.access_token);
 
+  return authenticateGoogleProfile(profile);
+}
+
+export async function authenticateGoogleIdToken(idToken: string) {
+  const profile = await verifyGoogleIdToken(idToken);
+  const result = await authenticateGoogleProfile(profile);
+
+  if (result.status === "link_required") {
+    throw new ApiError(
+      "Google account must be linked before mobile sign-in.",
+      409,
+    );
+  }
+
+  return result.user;
+}
+
+async function authenticateGoogleProfile(
+  profile: VerifiedGoogleProfile,
+): Promise<GoogleOAuthResult> {
   if (!profile.email_verified) {
     throw new ApiError("Google email must be verified.", 401);
   }
@@ -366,4 +405,39 @@ async function fetchGoogleUserInfo(accessToken: string) {
     email_verified: profile.email_verified,
     picture: profile.picture,
   };
+}
+
+async function verifyGoogleIdToken(idToken: string) {
+  const url = new URL(googleTokenInfoEndpoint);
+  url.searchParams.set("id_token", idToken);
+
+  const response = await fetch(url);
+  const profile = (await response.json().catch(() => null)) as
+    | GoogleIdTokenInfo
+    | null;
+
+  if (
+    !response.ok ||
+    !profile?.sub ||
+    !profile.email ||
+    !profile.aud ||
+    profile.aud !== getGoogleClientId()
+  ) {
+    throw new ApiError(
+      profile?.error_description ?? "Unable to verify Google ID token.",
+      401,
+    );
+  }
+
+  return {
+    sub: profile.sub,
+    name: profile.name,
+    email: profile.email,
+    email_verified: parseGoogleEmailVerified(profile.email_verified),
+    picture: profile.picture,
+  } satisfies VerifiedGoogleProfile;
+}
+
+function parseGoogleEmailVerified(value: boolean | string | undefined) {
+  return value === true || value === "true";
 }

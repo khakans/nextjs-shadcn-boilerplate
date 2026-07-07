@@ -4,7 +4,10 @@ import {
   apiOk,
   handleApiError,
 } from "@/lib/api-response";
-import { assertSameOriginRequest } from "@/lib/auth/csrf";
+import {
+  assertSameOriginOrBearerRequest,
+  assertSameOriginRequest,
+} from "@/lib/auth/csrf";
 import { issueAuthSession } from "@/lib/auth/session";
 import {
   assertApiRateLimit,
@@ -70,9 +73,9 @@ export async function loginController(request: Request) {
 
 export async function logoutController(request: Request) {
   try {
-    assertSameOriginRequest(request);
+    assertSameOriginOrBearerRequest(request);
     assertGlobalApiRateLimit(request);
-    await logoutService();
+    await logoutService(request);
 
     return apiOk({ ok: true });
   } catch (error) {
@@ -97,7 +100,7 @@ export async function refreshController(request: Request) {
 export async function currentUserController(request: Request) {
   try {
     assertGlobalApiRateLimit(request);
-    const user = await currentUserService();
+    const user = await currentUserService(request);
 
     return apiOk({ user });
   } catch (error) {

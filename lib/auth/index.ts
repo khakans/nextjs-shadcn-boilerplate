@@ -1,5 +1,7 @@
 export {
   getCurrentUser,
+  getCurrentUserFromAccessToken,
+  getCurrentUserFromRequest,
   hashPassword,
   requireCurrentUser,
   toAuthUser,

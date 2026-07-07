@@ -1,13 +1,16 @@
 import {
   getCurrentUser,
+  getCurrentUserFromRequest,
   hashPassword,
   toAuthUser,
   verifyPassword,
 } from "@/lib/auth";
 import { ApiError } from "@/lib/api-response";
+import { getBearerToken } from "@/lib/auth/bearer";
 import {
   clearAuthCookies,
   refreshAuthSession,
+  revokeAuthSessionByAccessToken,
   revokeCurrentAuthSession,
 } from "@/lib/auth/session";
 import { assertAllowedUserEmailDomain } from "@/lib/auth/email-domain";
@@ -112,13 +115,22 @@ export async function loginService(input: LoginRequest) {
   return toAuthUser(updatedUser);
 }
 
-export async function logoutService() {
-  await revokeCurrentAuthSession();
+export async function logoutService(request?: Request) {
+  const bearerToken = request ? getBearerToken(request) : null;
+
+  if (bearerToken) {
+    await revokeAuthSessionByAccessToken(bearerToken);
+  } else {
+    await revokeCurrentAuthSession();
+  }
+
   await clearAuthCookies();
 }
 
-export async function currentUserService() {
-  const user = await getCurrentUser();
+export async function currentUserService(request?: Request) {
+  const user = request
+    ? await getCurrentUserFromRequest(request)
+    : await getCurrentUser();
 
   if (!user) {
     throw new ApiError("Unauthorized.", 401);
