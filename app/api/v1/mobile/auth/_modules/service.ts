@@ -8,6 +8,7 @@ import {
   revokeAuthSessionByRefreshToken,
 } from "@/lib/auth/session";
 import type { IssuedAuthTokens } from "@/lib/auth/session";
+import { auditAction, auditTrailActions } from "@/lib/audit-trail";
 import { prisma } from "@/lib/prisma";
 
 import {
@@ -57,8 +58,21 @@ export async function mobileGoogleService(
   input: MobileGoogleRequest,
   request: Request,
 ): Promise<MobileAuthResponse> {
-  const user = await authenticateGoogleIdToken(input.idToken);
-  const tokens = await issueAuthSessionTokens(user, request);
+  const { user, tokens } = await auditAction(
+    auditTrailActions.authGoogleLogin,
+    async () => {
+      const authenticatedUser = await authenticateGoogleIdToken(input.idToken);
+      const issuedTokens = await issueAuthSessionTokens(
+        authenticatedUser,
+        request,
+      );
+
+      return {
+        user: authenticatedUser,
+        tokens: issuedTokens,
+      };
+    },
+  );
 
   return buildMobileAuthResponse(user, tokens);
 }
@@ -83,7 +97,9 @@ export async function mobileRefreshService(
 }
 
 export async function mobileLogoutService(input: MobileLogoutRequest) {
-  await revokeAuthSessionByRefreshToken(input.refreshToken);
+  await auditAction(auditTrailActions.authLogout, () =>
+    revokeAuthSessionByRefreshToken(input.refreshToken),
+  );
 }
 
 export async function mobileCurrentUserService(request: Request) {

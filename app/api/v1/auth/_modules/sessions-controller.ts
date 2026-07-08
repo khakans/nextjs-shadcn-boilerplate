@@ -8,14 +8,18 @@ import {
 import {
   listUserSessionsService,
   logoutOtherUserSessionsService,
+  parseUserSessionsQuery,
   revokeUserSessionService,
 } from "./sessions-service";
 
 export async function listUserSessionsController(request: Request) {
   assertGlobalApiRateLimit(request);
-  const sessions = await listUserSessionsService(request);
+  const result = await listUserSessionsService(
+    parseUserSessionsQuery(request),
+    request,
+  );
 
-  return apiOk({ sessions });
+  return apiOk(result);
 }
 
 export async function revokeUserSessionController(

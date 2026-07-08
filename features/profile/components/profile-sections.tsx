@@ -5,6 +5,9 @@ import { toast } from "sonner";
 import {
   CameraIcon,
   ChevronDownIcon,
+  CircleCheckIcon,
+  CircleXIcon,
+  HistoryIcon,
   LockKeyholeIcon,
   LogOutIcon,
   MonitorSmartphoneIcon,
@@ -51,12 +54,17 @@ import {
   type UserSessionItem,
 } from "@/features/auth/api/auth-client";
 import {
+  getAuditTrails,
+  type AuditTrailItem,
+} from "@/features/audit-trail/api/audit-trail-client";
+import {
   phoneCountryCodes,
   splitMobileNumber,
 } from "@/features/profile/lib/phone-country-codes";
 import { getApiErrorMessage } from "@/lib/api/http-client";
 import type { AuthUser } from "@/lib/auth";
 import type { getMessages } from "@/lib/i18n";
+import type { PaginationMeta } from "@/lib/pagination";
 
 type Messages = ReturnType<typeof getMessages>;
 
@@ -584,7 +592,11 @@ export function PasswordSection({
 
 export function ActiveSessionsSection({ t }: { t: Messages }) {
   const [sessions, setSessions] = React.useState<UserSessionItem[]>([]);
+  const [pagination, setPagination] = React.useState<PaginationMeta | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isLoadingMore, setIsLoadingMore] = React.useState(false);
   const [pendingSession, setPendingSession] =
     React.useState<UserSessionItem | null>(null);
   const [isRevokeConfirmOpen, setIsRevokeConfirmOpen] = React.useState(false);
@@ -595,6 +607,10 @@ export function ActiveSessionsSection({ t }: { t: Messages }) {
   >(null);
 
   const otherSessions = sessions.filter((session) => !session.isCurrent);
+  const hasMore = pagination ? pagination.page < pagination.totalPages : false;
+  const hasOtherSessions =
+    otherSessions.length > 0 ||
+    (pagination ? pagination.totalCount > 1 : sessions.length > 1);
 
   React.useEffect(() => {
     let isMounted = true;
@@ -607,6 +623,7 @@ export function ActiveSessionsSection({ t }: { t: Messages }) {
 
         if (isMounted) {
           setSessions(payload.sessions);
+          setPagination(payload.pagination);
         }
       } catch (loadError) {
         if (isMounted) {
@@ -625,6 +642,30 @@ export function ActiveSessionsSection({ t }: { t: Messages }) {
       isMounted = false;
     };
   }, [t.sessionsLoadFailed]);
+
+  async function loadMoreSessions() {
+    if (!hasMore || !pagination) {
+      return;
+    }
+
+    setIsLoadingMore(true);
+
+    try {
+      const payload = await getUserSessions(
+        pagination.page + 1,
+        pagination.pageSize,
+      );
+      setSessions((currentSessions) => [
+        ...currentSessions,
+        ...payload.sessions,
+      ]);
+      setPagination(payload.pagination);
+    } catch (loadError) {
+      toast.error(getApiErrorMessage(loadError, t.sessionsLoadFailed));
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }
 
   function openRevokeSessionDialog(session: UserSessionItem) {
     setPendingSession(session);
@@ -696,7 +737,7 @@ export function ActiveSessionsSection({ t }: { t: Messages }) {
                 aria-label={t.logoutOtherDevices}
                 disabled={
                   isLoading ||
-                  otherSessions.length === 0 ||
+                  !hasOtherSessions ||
                   pendingAction !== null
                 }
                 onClick={() => {
@@ -733,6 +774,18 @@ export function ActiveSessionsSection({ t }: { t: Messages }) {
           ))
         )}
       </div>
+
+      {hasMore ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-4 w-full"
+          disabled={isLoadingMore}
+          onClick={loadMoreSessions}
+        >
+          {isLoadingMore ? t.loading : t.loadMore}
+        </Button>
+      ) : null}
 
       <Dialog
         open={isRevokeConfirmOpen}
@@ -812,6 +865,184 @@ export function ActiveSessionsSection({ t }: { t: Messages }) {
                 ? t.sessionLogoutPending
                 : t.logoutOtherDevices}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </section>
+  );
+}
+
+export function AuditTrailSection({ t }: { t: Messages }) {
+  const [auditTrails, setAuditTrails] = React.useState<AuditTrailItem[]>([]);
+  const [pagination, setPagination] = React.useState<PaginationMeta | null>(
+    null,
+  );
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [isLoadingMore, setIsLoadingMore] = React.useState(false);
+  const [selectedTrail, setSelectedTrail] =
+    React.useState<AuditTrailItem | null>(null);
+  const hasMore = pagination ? pagination.page < pagination.totalPages : false;
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    async function loadAuditTrails() {
+      setIsLoading(true);
+
+      try {
+        const payload = await getAuditTrails();
+
+        if (isMounted) {
+          setAuditTrails(payload.auditTrails);
+          setPagination(payload.pagination);
+        }
+      } catch (loadError) {
+        if (isMounted) {
+          toast.error(getApiErrorMessage(loadError, t.auditTrailLoadFailed));
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadAuditTrails();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [t.auditTrailLoadFailed]);
+
+  async function loadMoreAuditTrails() {
+    if (!hasMore || !pagination) {
+      return;
+    }
+
+    setIsLoadingMore(true);
+
+    try {
+      const payload = await getAuditTrails(
+        pagination.page + 1,
+        pagination.pageSize,
+      );
+      setAuditTrails((currentAuditTrails) => [
+        ...currentAuditTrails,
+        ...payload.auditTrails,
+      ]);
+      setPagination(payload.pagination);
+    } catch (loadError) {
+      toast.error(getApiErrorMessage(loadError, t.auditTrailLoadFailed));
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }
+
+  return (
+    <section className="rounded-lg border bg-background p-5">
+      <div className="mb-5 flex items-start gap-2">
+        <HistoryIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold">{t.auditTrail}</h2>
+          <p className="text-sm text-muted-foreground">
+            {t.auditTrailDescription}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-3">
+        {isLoading ? (
+          <>
+            <AuditTrailSkeleton />
+            <AuditTrailSkeleton />
+          </>
+        ) : auditTrails.length === 0 ? (
+          <div className="rounded-lg border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
+            {t.noAuditTrails}
+          </div>
+        ) : (
+          auditTrails.map((auditTrail) => (
+            <AuditTrailListItem
+              key={auditTrail.id}
+              auditTrail={auditTrail}
+              onOpen={() => setSelectedTrail(auditTrail)}
+              t={t}
+            />
+          ))
+        )}
+      </div>
+
+      {hasMore ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-4 w-full"
+          disabled={isLoadingMore}
+          onClick={loadMoreAuditTrails}
+        >
+          {isLoadingMore ? t.loading : t.loadMore}
+        </Button>
+      ) : null}
+
+      <Dialog
+        open={Boolean(selectedTrail)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedTrail(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t.auditTrailDetails}</DialogTitle>
+            <DialogDescription>
+              {selectedTrail ? formatAuditAction(selectedTrail.action) : ""}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedTrail ? (
+            <div className="grid gap-4 text-sm">
+              <dl className="grid gap-2 sm:grid-cols-2">
+                <AuditTrailDetailItem
+                  label={t.eventTime}
+                  value={formatDateTime(selectedTrail.createdAt)}
+                />
+                <AuditTrailDetailItem
+                  label={t.status}
+                  value={selectedTrail.status}
+                />
+                <AuditTrailDetailItem
+                  label={t.entity}
+                  value={[selectedTrail.entityType, selectedTrail.entityId]
+                    .filter(Boolean)
+                    .join(" - ")}
+                />
+                <AuditTrailDetailItem
+                  label={t.sourceIp}
+                  value={selectedTrail.ipAddress ?? "-"}
+                />
+              </dl>
+              {selectedTrail.changedFields.length > 0 ? (
+                <div>
+                  <h3 className="text-xs font-medium uppercase text-muted-foreground">
+                    {t.changedFields}
+                  </h3>
+                  <p className="mt-1 break-words">
+                    {selectedTrail.changedFields.join(", ")}
+                  </p>
+                </div>
+              ) : null}
+              <AuditTrailJsonBlock label={t.before} value={selectedTrail.before} />
+              <AuditTrailJsonBlock label={t.after} value={selectedTrail.after} />
+              <AuditTrailJsonBlock
+                label={t.metadata}
+                value={selectedTrail.metadata}
+              />
+            </div>
+          ) : null}
+          <DialogFooter>
+            <DialogClose render={<Button type="button" variant="outline" />}>
+              {t.close}
+            </DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -909,6 +1140,120 @@ export function DeleteAccountSection({
         </DialogContent>
       </Dialog>
     </section>
+  );
+}
+
+function AuditTrailListItem({
+  auditTrail,
+  onOpen,
+  t,
+}: {
+  auditTrail: AuditTrailItem;
+  onOpen: () => void;
+  t: Messages;
+}) {
+  const isSuccess = auditTrail.status.toUpperCase() === "SUCCESS";
+
+  return (
+    <button
+      type="button"
+      className="rounded-lg border bg-muted/20 p-3 text-left transition-colors hover:bg-muted/40"
+      onClick={onOpen}
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-background">
+          {isSuccess ? (
+            <CircleCheckIcon className="size-4 text-primary" />
+          ) : (
+            <CircleXIcon className="size-4 text-destructive" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-medium">
+              {formatAuditAction(auditTrail.action)}
+            </p>
+            <span
+              className={
+                isSuccess
+                  ? "rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+                  : "rounded-md bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive"
+              }
+            >
+              {auditTrail.status}
+            </span>
+          </div>
+          <p className="mt-1 break-words text-xs text-muted-foreground">
+            {[auditTrail.entityType, auditTrail.ipAddress]
+              .filter(Boolean)
+              .join(" - ")}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {formatDateTime(auditTrail.createdAt)}
+          </p>
+          {auditTrail.changedFields.length > 0 ? (
+            <p className="mt-1 break-words text-xs text-muted-foreground">
+              {t.changedFields}: {auditTrail.changedFields.join(", ")}
+            </p>
+          ) : null}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function AuditTrailDetailItem({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="min-w-0 rounded-lg border bg-muted/30 p-3">
+      <dt className="text-xs font-medium uppercase text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="mt-1 break-words font-medium">{value || "-"}</dd>
+    </div>
+  );
+}
+
+function AuditTrailJsonBlock({
+  label,
+  value,
+}: {
+  label: string;
+  value: unknown;
+}) {
+  if (!hasAuditPayload(value)) {
+    return null;
+  }
+
+  return (
+    <div>
+      <h3 className="text-xs font-medium uppercase text-muted-foreground">
+        {label}
+      </h3>
+      <pre className="mt-1 max-h-56 overflow-auto rounded-lg border bg-muted/30 p-3 text-xs whitespace-pre-wrap">
+        {JSON.stringify(value, null, 2)}
+      </pre>
+    </div>
+  );
+}
+
+function AuditTrailSkeleton() {
+  return (
+    <div className="rounded-lg border bg-muted/20 p-3">
+      <div className="flex items-start gap-3">
+        <Skeleton className="size-9 shrink-0 rounded-lg" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-1/2" />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1036,6 +1381,31 @@ function formatDateTime(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function formatAuditAction(action: string) {
+  return action
+    .toLowerCase()
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function hasAuditPayload(value: unknown) {
+  if (!value) {
+    return false;
+  }
+
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+
+  if (typeof value === "object") {
+    return Object.keys(value).length > 0;
+  }
+
+  return true;
 }
 
 function StatusMessage({

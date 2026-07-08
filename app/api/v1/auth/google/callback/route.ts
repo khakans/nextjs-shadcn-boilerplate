@@ -13,6 +13,7 @@ import {
   getGoogleRedirectUri,
 } from "@/lib/auth/config";
 import { issueAuthSession } from "@/lib/auth/session";
+import { auditAction, auditTrailActions } from "@/lib/audit-trail";
 
 export const runtime = "nodejs";
 
@@ -42,7 +43,9 @@ async function googleCallbackRoute(request: Request) {
   }
 
   const redirectUri = getGoogleRedirectUri(request.url);
-  const result = await authenticateGoogleOAuth(code, redirectUri);
+  const result = await auditAction(auditTrailActions.authGoogleLogin, () =>
+    authenticateGoogleOAuth(code, redirectUri),
+  );
 
   if (result.status === "link_required") {
     await setGoogleLinkRequestCookie(result.linkRequest);

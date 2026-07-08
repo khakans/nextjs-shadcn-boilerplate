@@ -4,6 +4,8 @@ import {
   getCurrentUserSessionId,
   getCurrentUserSessionIdFromRequest,
 } from "@/lib/auth/session";
+import { auditAction, auditTrailActions } from "@/lib/audit-trail";
+import type { PaginationMeta } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 
 export type UserSessionItem = {
@@ -21,7 +23,20 @@ export type UserSessionItem = {
   isCurrent: boolean;
 };
 
-export async function listUserSessionsService(request?: Request) {
+export type UserSessionsQuery = {
+  page: number;
+  pageSize: number;
+};
+
+export type UserSessionsResult = {
+  sessions: UserSessionItem[];
+  pagination: PaginationMeta;
+};
+
+export async function listUserSessionsService(
+  query: UserSessionsQuery,
+  request?: Request,
+): Promise<UserSessionsResult> {
   const user = await requireSessionUser(request);
   const currentSessionId = request
     ? await getCurrentUserSessionIdFromRequest(request, user.id)
@@ -29,51 +44,99 @@ export async function listUserSessionsService(request?: Request) {
 
   await expireOldUserSessions(user.id);
 
-  const sessions = await prisma.userSession.findMany({
-    where: {
-      userId: user.id,
-      status: "ONLINE",
-      expiredAt: {
-        gt: new Date(),
-      },
+  const where = {
+    userId: user.id,
+    status: "ONLINE" as const,
+    expiredAt: {
+      gt: new Date(),
     },
-    orderBy: [
-      {
-        lastActiveAt: "desc",
+  };
+  const [totalCount, sessions] = await Promise.all([
+    prisma.userSession.count({
+      where,
+    }),
+    prisma.userSession.findMany({
+      where,
+      orderBy: [
+        {
+          lastActiveAt: "desc",
+        },
+        {
+          loginAt: "desc",
+        },
+      ],
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+      select: {
+        id: true,
+        sessionId: true,
+        browser: true,
+        operatingSystem: true,
+        deviceName: true,
+        ipAddress: true,
+        loginAt: true,
+        lastActiveAt: true,
+        logoutAt: true,
+        expiredAt: true,
+        status: true,
       },
-      {
-        loginAt: "desc",
-      },
-    ],
-    select: {
-      id: true,
-      sessionId: true,
-      browser: true,
-      operatingSystem: true,
-      deviceName: true,
-      ipAddress: true,
-      loginAt: true,
-      lastActiveAt: true,
-      logoutAt: true,
-      expiredAt: true,
-      status: true,
-    },
-  });
+    }),
+  ]);
+  const totalPages = Math.ceil(totalCount / query.pageSize);
 
-  return sessions.map((session) => ({
-    id: session.id,
-    sessionId: session.sessionId,
-    browser: session.browser,
-    operatingSystem: session.operatingSystem,
-    deviceName: session.deviceName,
-    ipAddress: session.ipAddress,
-    loginAt: session.loginAt.toISOString(),
-    lastActiveAt: session.lastActiveAt.toISOString(),
-    logoutAt: session.logoutAt?.toISOString() ?? null,
-    expiredAt: session.expiredAt.toISOString(),
-    status: session.status,
-    isCurrent: session.id === currentSessionId,
-  })) satisfies UserSessionItem[];
+  return {
+    sessions: sessions.map((session) => ({
+      id: session.id,
+      sessionId: session.sessionId,
+      browser: session.browser,
+      operatingSystem: session.operatingSystem,
+      deviceName: session.deviceName,
+      ipAddress: session.ipAddress,
+      loginAt: session.loginAt.toISOString(),
+      lastActiveAt: session.lastActiveAt.toISOString(),
+      logoutAt: session.logoutAt?.toISOString() ?? null,
+      expiredAt: session.expiredAt.toISOString(),
+      status: session.status,
+      isCurrent: session.id === currentSessionId,
+    })),
+    pagination: {
+      page: query.page,
+      pageSize: query.pageSize,
+      totalCount,
+      totalPages,
+    },
+  };
+}
+
+export function parseUserSessionsQuery(request: Request): UserSessionsQuery {
+  const url = new URL(request.url);
+
+  return {
+    page: parsePage(url.searchParams.get("page")),
+    pageSize: parsePageSize(
+      url.searchParams.get("pageSize") ?? url.searchParams.get("limit"),
+    ),
+  };
+}
+
+function parsePage(value: string | null) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return 1;
+  }
+
+  return Math.max(Math.trunc(parsed), 1);
+}
+
+function parsePageSize(value: string | null) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return 20;
+  }
+
+  return Math.min(Math.max(Math.trunc(parsed), 1), 50);
 }
 
 export async function revokeUserSessionService(
@@ -103,7 +166,9 @@ export async function revokeUserSessionService(
     throw new ApiError("Use logout to end the current session.", 400);
   }
 
-  await revokeSessionsByIds([session.id], "REVOKED");
+  await auditAction(auditTrailActions.sessionRevoked, () =>
+    revokeSessionsByIds([session.id], "REVOKED"),
+  );
 }
 
 export async function logoutOtherUserSessionsService(request?: Request) {
@@ -129,9 +194,13 @@ export async function logoutOtherUserSessionsService(request?: Request) {
     },
   });
 
-  await revokeSessionsByIds(
-    sessions.map((session) => session.id),
-    "REVOKED",
+  await auditAction(
+    auditTrailActions.otherSessionsRevoked,
+    () =>
+      revokeSessionsByIds(
+        sessions.map((session) => session.id),
+        "REVOKED",
+      ),
   );
 }
 

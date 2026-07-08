@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { ApiError, apiError } from "@/lib/api-response";
+import { runWithAuditRequestContext } from "@/lib/audit-trail";
 import { logger } from "@/lib/logger";
 
 type RouteHandler<TArgs extends unknown[] = unknown[]> = (
@@ -23,39 +24,47 @@ export function withApiMiddleware<TArgs extends unknown[]>(
     const requestId = randomUUID();
     const startedAt = performance.now();
 
-    try {
-      const response = await handler(request, ...args);
-      setRequestIdHeader(response, requestId);
-      logRequest("info", request, response.status, startedAt, requestId);
+    return runWithAuditRequestContext(
+      {
+        request,
+        requestId,
+      },
+      async () => {
+        try {
+          const response = await handler(request, ...args);
+          setRequestIdHeader(response, requestId);
+          logRequest("info", request, response.status, startedAt, requestId);
 
-      return response;
-    } catch (error) {
-      if (isNextControlFlowError(error)) {
-        throw error;
-      }
+          return response;
+        } catch (error) {
+          if (isNextControlFlowError(error)) {
+            throw error;
+          }
 
-      if (error instanceof ApiError) {
-        const response =
-          (await options.onApiError?.(error, request)) ??
-          apiError(error.message, error.status);
-        const level = error.status >= 500 ? "error" : "warn";
+          if (error instanceof ApiError) {
+            const response =
+              (await options.onApiError?.(error, request)) ??
+              apiError(error.message, error.status);
+            const level = error.status >= 500 ? "error" : "warn";
 
-        setRequestIdHeader(response, requestId);
-        logRequest(level, request, response.status, startedAt, requestId, {
-          error,
-          errorStatus: error.status,
-        });
+            setRequestIdHeader(response, requestId);
+            logRequest(level, request, response.status, startedAt, requestId, {
+              error,
+              errorStatus: error.status,
+            });
 
-        return response;
-      }
+            return response;
+          }
 
-      logger.error("Unhandled API error", {
-        error,
-        request: getRequestContext(request, undefined, startedAt, requestId),
-      });
+          logger.error("Unhandled API error", {
+            error,
+            request: getRequestContext(request, undefined, startedAt, requestId),
+          });
 
-      throw error;
-    }
+          throw error;
+        }
+      },
+    );
   };
 }
 

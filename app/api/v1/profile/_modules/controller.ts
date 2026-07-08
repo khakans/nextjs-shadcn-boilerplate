@@ -14,9 +14,18 @@ import {
 import {
   changePasswordService,
   deleteProfileService,
+  deleteAvatarService,
+  getProfileService,
   updateProfileService,
   updateAvatarService,
 } from "./service";
+
+export async function getProfileController(request: Request) {
+  assertGlobalApiRateLimit(request);
+  const user = await getProfileService(request);
+
+  return apiOk({ user });
+}
 
 export async function deleteProfileController(request: Request) {
   assertSameOriginOrBearerRequest(request);
@@ -25,6 +34,16 @@ export async function deleteProfileController(request: Request) {
   await deleteProfileService(request);
 
   return apiOk({ ok: true });
+}
+
+export async function deleteAvatarController(request: Request) {
+  assertSameOriginOrBearerRequest(request);
+  assertGlobalApiRateLimit(request);
+  assertApiRateLimit(request, "profile:avatar");
+
+  const user = await deleteAvatarService(request);
+
+  return apiOk({ user });
 }
 
 export async function updateProfileController(request: Request) {

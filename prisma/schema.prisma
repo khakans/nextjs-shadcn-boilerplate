@@ -46,6 +46,8 @@ model User {
   refreshTokens       RefreshToken[]
   userSessions        UserSession[]
   passwordResetTokens PasswordResetToken[]
+  actorAuditTrails    AuditTrail[]         @relation("AuditTrailActor")
+  targetAuditTrails   AuditTrail[]         @relation("AuditTrailTarget")
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
 }
@@ -130,4 +132,33 @@ model Job {
   @@index([status, runAt])
   @@index([lockedAt])
   @@index([type])
+}
+
+model AuditTrail {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  actorUserId   String?  @db.Uuid
+  targetUserId  String?  @db.Uuid
+  userSessionId String?  @db.Uuid
+  action        String
+  entityType    String
+  entityId      String?
+  status        String
+  before        Json?
+  after         Json?
+  changedFields String[] @default([])
+  metadata      Json?
+  ipAddress     String?
+  userAgent     String?  @db.Text
+  requestId     String?
+  createdAt     DateTime @default(now())
+
+  actorUser  User? @relation("AuditTrailActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  targetUser User? @relation("AuditTrailTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  @@index([actorUserId, createdAt])
+  @@index([targetUserId, createdAt])
+  @@index([action, createdAt])
+  @@index([entityType, entityId])
+  @@index([status, createdAt])
+  @@index([createdAt])
 }

@@ -8,6 +8,7 @@ import {
   linkGoogleAccount,
 } from "@/lib/auth/google";
 import { issueAuthSession } from "@/lib/auth/session";
+import { auditAction, auditTrailActions } from "@/lib/audit-trail";
 
 export const runtime = "nodejs";
 
@@ -23,7 +24,9 @@ async function linkGoogleRoute(request: Request) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  const user = await linkGoogleAccount();
+  const user = await auditAction(auditTrailActions.authGoogleLink, () =>
+    linkGoogleAccount(),
+  );
 
   await issueAuthSession(user, request);
 

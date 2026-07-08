@@ -590,8 +590,139 @@
       ]
     },
     {
+      "name": "Audit Trails",
+      "item": [
+        {
+          "name": "List Audit Trails",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const auditTrails = json.data && Array.isArray(json.data.auditTrails) ? json.data.auditTrails : [];",
+                  "if (auditTrails[0]) {",
+                  "  pm.environment.set('audit_trail_id', auditTrails[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mobile_access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/audit-trails?page=1&pageSize=5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "audit-trails"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Lists audit trail entries where the current user is actor or target. Saves the first audit trail id into `audit_trail_id` when available."
+          }
+        },
+        {
+          "name": "Get Audit Trail Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mobile_access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/audit-trails/{{audit_trail_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "audit-trails",
+                "{{audit_trail_id}}"
+              ]
+            },
+            "description": "Returns one audit trail with detailed actor user, target user, session, request metadata, before, after, changedFields, and metadata payloads."
+          }
+        }
+      ]
+    },
+    {
       "name": "Profile",
       "item": [
+        {
+          "name": "Current Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mobile_access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile"
+              ]
+            },
+            "description": "Returns the current profile user. Can be authenticated with web HttpOnly cookies or `Authorization: Bearer {{mobile_access_token}}` for mobile clients."
+          }
+        },
+        {
+          "name": "Update Personal Info",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mobile_access_token}}"
+              },
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{name}}\",\n  \"username\": \"{{username}}\",\n  \"birthDate\": \"2000-01-01\",\n  \"birthPlace\": \"Jakarta\",\n  \"mobileNumber\": \"+6281234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile"
+              ]
+            },
+            "description": "Updates profile identity and personal info. `username`, `birthDate`, `birthPlace`, and `mobileNumber` can be sent as null to clear optional values. Can be authenticated with web HttpOnly cookies or `Authorization: Bearer {{mobile_access_token}}` for mobile clients."
+          }
+        },
         {
           "name": "Update Username",
           "request": {
@@ -746,6 +877,33 @@
               ]
             },
             "description": "Set `avatar_file_path` in the environment to a local JPG or PNG path before sending.\n\nCan be authenticated with web HttpOnly cookies or `Authorization: Bearer {{mobile_access_token}}` for mobile clients."
+          }
+        },
+        {
+          "name": "Delete Avatar",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{mobile_access_token}}"
+              },
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/profile/avatar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile",
+                "avatar"
+              ]
+            },
+            "description": "Removes the current user avatar. Can be authenticated with web HttpOnly cookies or `Authorization: Bearer {{mobile_access_token}}` for mobile clients."
           }
         },
         {

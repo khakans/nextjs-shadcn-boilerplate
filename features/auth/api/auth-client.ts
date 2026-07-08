@@ -1,6 +1,7 @@
 import { apiPath } from "@/lib/api-paths";
 import { apiRequest } from "@/lib/api/http-client";
 import type { AuthUser } from "@/lib/auth";
+import type { PaginationMeta } from "@/lib/pagination";
 
 type AuthUserResponse = {
   user: AuthUser;
@@ -27,6 +28,7 @@ export type UserSessionItem = {
 
 type UserSessionsResponse = {
   sessions: UserSessionItem[];
+  pagination: PaginationMeta;
 };
 
 export type LoginInput = {
@@ -95,8 +97,13 @@ export function resetPassword(input: ResetPasswordInput) {
   });
 }
 
-export function getUserSessions() {
-  return apiRequest<UserSessionsResponse>("/auth/sessions");
+export function getUserSessions(page = 1, pageSize = 10) {
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+
+  return apiRequest<UserSessionsResponse>(`/auth/sessions?${params.toString()}`);
 }
 
 export function revokeUserSession(sessionId: string) {

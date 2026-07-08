@@ -14,6 +14,7 @@ import {
   revokeCurrentAuthSession,
 } from "@/lib/auth/session";
 import { assertAllowedUserEmailDomain } from "@/lib/auth/email-domain";
+import { auditAction, auditTrailActions } from "@/lib/audit-trail";
 import { prisma } from "@/lib/prisma";
 
 import type { LoginRequest, SignupRequest } from "./request";
@@ -35,25 +36,28 @@ export async function signupService(input: SignupRequest) {
   }
 
   const passwordHash = await hashPassword(input.password);
-  const user = await prisma.user.create({
-    data: {
-      name: input.name,
-      email: input.email,
-      passwordHash,
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      username: true,
-      avatarUrl: true,
-      birthDate: true,
-      birthPlace: true,
-      gender: true,
-      mobileNumber: true,
-      tokenVersion: true,
-    },
-  });
+  const user = await auditAction(auditTrailActions.authSignup, () =>
+    prisma.user.create({
+      data: {
+        name: input.name,
+        email: input.email,
+        passwordHash,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        username: true,
+        avatarUrl: true,
+        birthDate: true,
+        birthPlace: true,
+        gender: true,
+        mobileNumber: true,
+        tokenVersion: true,
+      },
+    }),
+  );
+
   return toAuthUser(user);
 }
 
@@ -89,41 +93,53 @@ export async function loginService(input: LoginRequest) {
     !user.passwordHash ||
     !(await verifyPassword(input.password, user.passwordHash))
   ) {
-    throw new ApiError("Invalid email or password.", 401);
+    const invalidCredentialsError = new ApiError(
+      "Invalid email or password.",
+      401,
+    );
+
+    await auditAction(auditTrailActions.authLogin, async () => {
+      throw invalidCredentialsError;
+    });
+    throw invalidCredentialsError;
   }
 
-  const updatedUser = await prisma.user.update({
-    where: {
-      id: user.id,
-    },
-    data: {
-      lastLoginAt: new Date(),
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      username: true,
-      avatarUrl: true,
-      birthDate: true,
-      birthPlace: true,
-      gender: true,
-      mobileNumber: true,
-      tokenVersion: true,
-    },
-  });
+  const updatedUser = await auditAction(auditTrailActions.authLogin, () =>
+    prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        lastLoginAt: new Date(),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        username: true,
+        avatarUrl: true,
+        birthDate: true,
+        birthPlace: true,
+        gender: true,
+        mobileNumber: true,
+        tokenVersion: true,
+      },
+    }),
+  );
+
   return toAuthUser(updatedUser);
 }
 
 export async function logoutService(request?: Request) {
   const bearerToken = request ? getBearerToken(request) : null;
 
-  if (bearerToken) {
-    await revokeAuthSessionByAccessToken(bearerToken);
-  } else {
-    await revokeCurrentAuthSession();
-  }
-
+  await auditAction(auditTrailActions.authLogout, async () => {
+    if (bearerToken) {
+      await revokeAuthSessionByAccessToken(bearerToken);
+    } else {
+      await revokeCurrentAuthSession();
+    }
+  });
   await clearAuthCookies();
 }
 

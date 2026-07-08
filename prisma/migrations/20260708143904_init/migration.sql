@@ -101,6 +101,28 @@ CREATE TABLE "Job" (
     CONSTRAINT "Job_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "AuditTrail" (
+    "id" UUID NOT NULL,
+    "actorUserId" UUID,
+    "targetUserId" UUID,
+    "userSessionId" UUID,
+    "action" TEXT NOT NULL,
+    "entityType" TEXT NOT NULL,
+    "entityId" TEXT,
+    "status" TEXT NOT NULL,
+    "before" JSONB,
+    "after" JSONB,
+    "changedFields" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "metadata" JSONB,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "requestId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AuditTrail_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -155,6 +177,24 @@ CREATE INDEX "Job_lockedAt_idx" ON "Job"("lockedAt");
 -- CreateIndex
 CREATE INDEX "Job_type_idx" ON "Job"("type");
 
+-- CreateIndex
+CREATE INDEX "AuditTrail_actorUserId_createdAt_idx" ON "AuditTrail"("actorUserId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "AuditTrail_targetUserId_createdAt_idx" ON "AuditTrail"("targetUserId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "AuditTrail_action_createdAt_idx" ON "AuditTrail"("action", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "AuditTrail_entityType_entityId_idx" ON "AuditTrail"("entityType", "entityId");
+
+-- CreateIndex
+CREATE INDEX "AuditTrail_status_createdAt_idx" ON "AuditTrail"("status", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "AuditTrail_createdAt_idx" ON "AuditTrail"("createdAt");
+
 -- AddForeignKey
 ALTER TABLE "RefreshToken" ADD CONSTRAINT "RefreshToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -166,3 +206,9 @@ ALTER TABLE "UserSession" ADD CONSTRAINT "UserSession_userId_fkey" FOREIGN KEY (
 
 -- AddForeignKey
 ALTER TABLE "PasswordResetToken" ADD CONSTRAINT "PasswordResetToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditTrail" ADD CONSTRAINT "AuditTrail_actorUserId_fkey" FOREIGN KEY ("actorUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditTrail" ADD CONSTRAINT "AuditTrail_targetUserId_fkey" FOREIGN KEY ("targetUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;

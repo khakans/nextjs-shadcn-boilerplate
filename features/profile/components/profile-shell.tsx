@@ -12,6 +12,7 @@ import {
 import {
   AccountInfoSection,
   ActiveSessionsSection,
+  AuditTrailSection,
   AvatarProfileSection,
   DeleteAccountSection,
   PasswordSection,
@@ -107,6 +108,7 @@ export function ProfileShell({ user }: { user: AuthUser }) {
                 t={profile.t}
               />
               <ActiveSessionsSection t={profile.t} />
+              <AuditTrailSection t={profile.t} />
             </div>
           </div>
 

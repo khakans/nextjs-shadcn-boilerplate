@@ -1,8 +1,8 @@
-import { ProfileShell } from "@/features/profile/components/profile-shell";
+import { ProfileSettingsShell } from "@/components/settings/profile-settings-shell";
 import { requireCurrentUser } from "@/lib/auth";
 
 export default async function ProfilePage() {
   const user = await requireCurrentUser();
 
-  return <ProfileShell user={user} />;
+  return <ProfileSettingsShell initialUser={user} />;
 }

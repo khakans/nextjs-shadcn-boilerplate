@@ -12,6 +12,7 @@ export type UsernameRequest = {
 };
 
 export type ProfileDetailsRequest = {
+  name?: string;
   birthDate?: Date | null;
   birthPlace?: string | null;
   gender?: string | null;
@@ -163,6 +164,8 @@ export function parseProfileUpdateRequest(
   const hasBirthPlace = hasProperty(body, "birthPlace");
   const hasGender = hasProperty(body, "gender");
   const hasMobileNumber = hasProperty(body, "mobileNumber");
+  const hasName = hasProperty(body, "name");
+  const name = hasName ? getStringProperty(body, "name") : null;
   const birthDate = hasBirthDate
     ? getNullableStringProperty(body, "birthDate")
     : null;
@@ -190,6 +193,21 @@ export function parseProfileUpdateRequest(
   const normalizedBirthPlace = normalizeOptionalString(birthPlace);
   const normalizedGender = normalizeOptionalString(gender);
   const normalizedMobileNumber = normalizeOptionalString(mobileNumber);
+  const normalizedName = normalizeOptionalString(name);
+
+  if (hasName && (!normalizedName || normalizedName.length < 2)) {
+    return {
+      ok: false,
+      error: "Name must be at least 2 characters.",
+    };
+  }
+
+  if (normalizedName && normalizedName.length > 100) {
+    return {
+      ok: false,
+      error: "Name must be 100 characters or fewer.",
+    };
+  }
 
   if (normalizedGender && !allowedGenders.has(normalizedGender)) {
     return {
@@ -214,6 +232,11 @@ export function parseProfileUpdateRequest(
       ...("username" in usernameResult.data
         ? {
             username: usernameResult.data.username,
+          }
+        : {}),
+      ...(hasName
+        ? {
+            name: normalizedName ?? "",
           }
         : {}),
       ...(hasBirthDate

@@ -14,6 +14,14 @@ export type ChangePasswordInput = {
   newPassword: string;
 };
 
+export type UpdateProfileInput = {
+  birthDate?: string | null;
+  birthPlace?: string | null;
+  mobileNumber?: string | null;
+  name?: string;
+  username?: string | null;
+};
+
 export type UpdateUsernameInput = {
   username: string | null;
 };
@@ -24,6 +32,20 @@ export type UpdateProfileDetailsInput = {
   gender: string | null;
   mobileNumber: string | null;
 };
+
+export function getProfile() {
+  return apiRequest<ProfileUserResponse>("/profile");
+}
+
+export function updateProfile(input: UpdateProfileInput) {
+  return apiRequest<ProfileUserResponse>("/profile", {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+}
 
 export function updateUsername(input: UpdateUsernameInput) {
   return apiRequest<ProfileUserResponse>("/profile", {
@@ -52,6 +74,12 @@ export function uploadAvatar(file: File) {
   return apiRequest<ProfileUserResponse>("/profile/avatar", {
     method: "POST",
     body: formData,
+  });
+}
+
+export function deleteAvatar() {
+  return apiRequest<ProfileUserResponse>("/profile/avatar", {
+    method: "DELETE",
   });
 }
 
