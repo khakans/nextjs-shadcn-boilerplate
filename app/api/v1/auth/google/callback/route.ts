@@ -8,6 +8,7 @@ import {
 } from "@/lib/auth/google";
 import {
   GOOGLE_OAUTH_STATE_COOKIE_NAME,
+  getAppBaseUrl,
   getGoogleRedirectUri,
 } from "@/lib/auth/config";
 import { issueAuthSession } from "@/lib/auth/session";
@@ -15,6 +16,8 @@ import { issueAuthSession } from "@/lib/auth/session";
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
+  const appBaseUrl = getAppBaseUrl(request.url);
+
   try {
     const requestUrl = new URL(request.url);
     const error = requestUrl.searchParams.get("error");
@@ -45,17 +48,17 @@ export async function GET(request: Request) {
     if (result.status === "link_required") {
       await setGoogleLinkRequestCookie(result.linkRequest);
 
-      return NextResponse.redirect(new URL("/auth/link-google", request.url));
+      return NextResponse.redirect(new URL("/auth/link-google", appBaseUrl));
     }
 
     await issueAuthSession(result.user, request);
 
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/", appBaseUrl));
   } catch (error) {
     console.error("Google OAuth callback failed", error);
 
     return NextResponse.redirect(
-      new URL("/login?authError=google", request.url),
+      new URL("/login?authError=google", appBaseUrl),
     );
   }
 }
