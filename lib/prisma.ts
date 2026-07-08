@@ -1,11 +1,22 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 
-import { interceptPrismaOperation } from "@/lib/audit-trail";
 import { PrismaClient } from "@/lib/generated/prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
+
+type PrismaOperationInput<TArgs, TResult> = {
+  model?: string;
+  operation: string;
+  args: TArgs;
+  query: (args: TArgs) => Promise<TResult>;
+};
+
+type PrismaOperationInterceptor = typeof import("@/lib/audit-trail")["interceptPrismaOperation"];
+
+let auditTrailInterceptorPromise: Promise<PrismaOperationInterceptor> | null =
+  null;
 
 export const prisma: PrismaClient =
   globalForPrisma.prisma ?? createPrismaClient();
@@ -27,7 +38,7 @@ function createPrismaClient(): PrismaClient {
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          return interceptPrismaOperation({
+          return runPrismaOperation({
             model,
             operation,
             args,
@@ -37,4 +48,37 @@ function createPrismaClient(): PrismaClient {
       },
     },
   }) as unknown as PrismaClient;
+}
+
+async function runPrismaOperation<TArgs, TResult>(
+  input: PrismaOperationInput<TArgs, TResult>,
+) {
+  if (isJobsWorkerProcess()) {
+    return input.query(input.args);
+  }
+
+  const interceptPrismaOperation = await getAuditTrailInterceptor();
+
+  return interceptPrismaOperation(input);
+}
+
+function getAuditTrailInterceptor() {
+  auditTrailInterceptorPromise ??= import("@/lib/audit-trail").then(
+    (module) => module.interceptPrismaOperation,
+  );
+
+  return auditTrailInterceptorPromise;
+}
+
+function isJobsWorkerProcess() {
+  if (process.env.JOB_WORKER === "true") {
+    return true;
+  }
+
+  const entrypoint = process.argv[1]?.replaceAll("\\", "/") ?? "";
+
+  return (
+    entrypoint.endsWith("/workers/jobs-worker.ts") ||
+    entrypoint.endsWith("/workers/jobs-worker.js")
+  );
 }
