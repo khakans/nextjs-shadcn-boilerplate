@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { usePathname } from "next/navigation"
 
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
@@ -16,7 +17,7 @@ import {
 import type { AuthUser } from "@/lib/auth"
 import { getMessages } from "@/lib/i18n"
 import { useLanguagePreference } from "@/lib/theme"
-import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, TerminalSquareIcon, BotIcon, BookOpenIcon, Settings2Icon, FrameIcon, PieChartIcon, MapIcon } from "lucide-react"
+import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, Settings2Icon, FrameIcon, PieChartIcon, MapIcon } from "lucide-react"
 
 export function AppSidebar({
   user,
@@ -24,8 +25,10 @@ export function AppSidebar({
 }: React.ComponentProps<typeof Sidebar> & {
   user: AuthUser
 }) {
+  const pathname = usePathname()
   const { language } = useLanguagePreference()
   const t = getMessages(language)
+  const isCompaniesActive = isActivePath(pathname, "/companies")
   const data = {
     user,
     teams: [
@@ -56,87 +59,22 @@ export function AppSidebar({
     ],
     navMain: [
       {
-        title: t.playground,
-        url: "#",
-        icon: (
-          <TerminalSquareIcon
-          />
-        ),
-        isActive: true,
-        items: [
-          {
-            title: t.history,
-            url: "#",
-          },
-          {
-            title: t.starred,
-            url: "#",
-          },
-          {
-            title: t.settings,
-            url: "#",
-          },
-        ],
-      },
-      {
-        title: t.models,
-        url: "#",
-        icon: (
-          <BotIcon
-          />
-        ),
-        items: [
-          {
-            title: "Genesis",
-            url: "#",
-          },
-          {
-            title: "Explorer",
-            url: "#",
-          },
-          {
-            title: "Quantum",
-            url: "#",
-          },
-        ],
-      },
-      {
-        title: t.documentation,
-        url: "#",
-        icon: (
-          <BookOpenIcon
-          />
-        ),
-        items: [
-          {
-            title: t.introduction,
-            url: "#",
-          },
-          {
-            title: t.getStarted,
-            url: "#",
-          },
-          {
-            title: t.tutorials,
-            url: "#",
-          },
-          {
-            title: t.changelog,
-            url: "#",
-          },
-        ],
-      },
-      {
         title: t.settings,
         url: "#",
         icon: (
           <Settings2Icon
           />
         ),
+        isActive: isCompaniesActive,
         items: [
           {
             title: t.general,
             url: "#",
+          },
+          {
+            isActive: isCompaniesActive,
+            title: t.companies,
+            url: "/companies",
           },
           {
             title: t.teams,
@@ -205,4 +143,8 @@ export function AppSidebar({
       <SidebarRail />
     </Sidebar>
   )
+}
+
+function isActivePath(pathname: string, url: string) {
+  return pathname === url || pathname.startsWith(`${url}/`)
 }

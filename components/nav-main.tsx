@@ -15,7 +15,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
-import { ChevronRightIcon } from "lucide-react"
+import { BadgeCheckIcon, ChevronRightIcon } from "lucide-react"
 
 export function NavMain({
   groupLabel,
@@ -28,6 +28,7 @@ export function NavMain({
     icon?: React.ReactNode
     isActive?: boolean
     items?: {
+      isActive?: boolean
       title: string
       url: string
     }[]
@@ -57,7 +58,13 @@ export function NavMain({
               <SidebarMenuSub>
                 {item.items?.map((subItem) => (
                   <SidebarMenuSubItem key={subItem.title}>
+                    {subItem.isActive ? (
+                      <BadgeCheckIcon className="pointer-events-none absolute left-[-17px] top-1/2 size-4 -translate-y-1/2 text-primary" />
+                    ) : null}
                     <SidebarMenuSubButton render={<a href={subItem.url} />}>
+                      {subItem.isActive ? (
+                        <span className="sr-only">Active:</span>
+                      ) : null}
                       <span>{subItem.title}</span>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>

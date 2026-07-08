@@ -16,6 +16,8 @@ export const auditTrailActions = {
   passwordChanged: "PASSWORD_CHANGED",
   profileUpdated: "PROFILE_UPDATED",
   avatarUpdated: "AVATAR_UPDATED",
+  companyCreated: "COMPANY_CREATED",
+  companyUpdated: "COMPANY_UPDATED",
   accountDeactivated: "ACCOUNT_DEACTIVATED",
   sessionRevoked: "SESSION_REVOKED",
   otherSessionsRevoked: "OTHER_SESSIONS_REVOKED",
@@ -28,6 +30,7 @@ export const auditTrailEntities = {
   passwordResetToken: "PasswordResetToken",
   user: "User",
   userSession: "UserSession",
+  company: "Company",
 } as const;
 
 export const auditTrailStatuses = {

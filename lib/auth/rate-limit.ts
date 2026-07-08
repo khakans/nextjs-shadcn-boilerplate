@@ -19,6 +19,7 @@ type ApiRateLimitAction =
   | "auth:forgot-password-email"
   | "auth:reset-password"
   | "auth:session-mutation"
+  | "companies:mutation"
   | "profile:mutation"
   | "profile:avatar"
   | "profile:password";
@@ -64,6 +65,10 @@ const apiRateLimitConfig = {
     windowMs: 15 * 60 * 1000,
   },
   "auth:session-mutation": {
+    limit: 30,
+    windowMs: 60 * 1000,
+  },
+  "companies:mutation": {
     limit: 30,
     windowMs: 60 * 1000,
   },

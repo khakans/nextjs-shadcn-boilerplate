@@ -38,6 +38,7 @@ export const messages = {
     changedFields: "Changed fields",
     close: "Close",
     cancel: "Cancel",
+    companies: "Companies",
     confirm: "Confirm",
     confirmPasswordChange: "Confirm password change",
     confirmPasswordChangeDescription:
@@ -370,6 +371,7 @@ export const messages = {
     changedFields: "Field berubah",
     close: "Tutup",
     cancel: "Batal",
+    companies: "Perusahaan",
     confirm: "Konfirmasi",
     confirmPasswordChange: "Konfirmasi perubahan password",
     confirmPasswordChangeDescription:
