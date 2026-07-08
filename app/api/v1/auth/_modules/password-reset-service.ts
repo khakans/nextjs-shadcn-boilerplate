@@ -6,7 +6,6 @@ import { getAppBaseUrl } from "@/lib/auth/config";
 import { clearAuthCookies } from "@/lib/auth/session";
 import { ApiError } from "@/lib/api-response";
 import { hashPassword } from "@/lib/auth";
-import { maskEmail } from "@/lib/auth/password-reset-email";
 import { enqueueJob } from "@/lib/jobs/enqueue";
 import { jobTypes } from "@/lib/jobs/types";
 import { prisma } from "@/lib/prisma";
@@ -38,9 +37,6 @@ export async function forgotPasswordService(
   });
 
   if (!user || !user.isActive) {
-    console.info(
-      `[auth] Password reset email skipped for ${maskEmail(input.email)} because account was not found or inactive.`,
-    );
     return {
       ok: true,
       message: forgotPasswordSuccessMessage,
@@ -73,7 +69,7 @@ export async function forgotPasswordService(
   ]);
 
   try {
-    const job = await enqueueJob(
+    await enqueueJob(
       jobTypes.sendPasswordResetEmail,
       {
         userId: user.id,
@@ -85,12 +81,10 @@ export async function forgotPasswordService(
         maxAttempts: 5,
       },
     );
-    console.info(
-      `[auth] Password reset email queued for ${maskEmail(user.email)} for user ${user.id}. job=${job.id}`,
-    );
   } catch (error) {
-    console.error("Failed to queue password reset email", error);
-    throw new ApiError("Unable to queue password reset email.", 500);
+    throw new ApiError("Unable to queue password reset email.", 500, {
+      cause: error,
+    });
   }
 
   return {

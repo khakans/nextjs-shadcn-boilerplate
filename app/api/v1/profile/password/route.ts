@@ -1,5 +1,6 @@
 import { changePasswordController } from "../_modules/controller";
+import { withApiMiddleware } from "@/lib/api-middleware";
 
 export const runtime = "nodejs";
 
-export const PATCH = changePasswordController;
+export const PATCH = withApiMiddleware(changePasswordController);

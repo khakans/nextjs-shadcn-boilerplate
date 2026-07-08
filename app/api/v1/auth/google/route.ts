@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { withApiMiddleware } from "@/lib/api-middleware";
 import {
   GOOGLE_OAUTH_STATE_COOKIE_NAME,
   getGoogleClientId,
@@ -11,7 +12,7 @@ import {
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request) {
+async function googleAuthRoute(request: Request) {
   const state = randomBytes(32).toString("base64url");
   const redirectUri = getGoogleRedirectUri(request.url);
   const authorizationUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
@@ -35,3 +36,5 @@ export async function GET(request: Request) {
 
   return NextResponse.redirect(authorizationUrl);
 }
+
+export const GET = withApiMiddleware(googleAuthRoute);

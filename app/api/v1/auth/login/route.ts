@@ -1,5 +1,6 @@
 import { loginController } from "../_modules/controller";
+import { withApiMiddleware } from "@/lib/api-middleware";
 
 export const runtime = "nodejs";
 
-export const POST = loginController;
+export const POST = withApiMiddleware(loginController);

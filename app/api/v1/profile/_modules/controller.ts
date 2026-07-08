@@ -1,4 +1,4 @@
-import { ApiError, apiOk, handleApiError } from "@/lib/api-response";
+import { ApiError, apiOk } from "@/lib/api-response";
 import { assertSameOriginOrBearerRequest } from "@/lib/auth/csrf";
 import {
   assertApiRateLimit,
@@ -19,83 +19,63 @@ import {
 } from "./service";
 
 export async function deleteProfileController(request: Request) {
-  try {
-    assertSameOriginOrBearerRequest(request);
-    assertGlobalApiRateLimit(request);
-    assertApiRateLimit(request, "profile:mutation");
-    await deleteProfileService(request);
+  assertSameOriginOrBearerRequest(request);
+  assertGlobalApiRateLimit(request);
+  assertApiRateLimit(request, "profile:mutation");
+  await deleteProfileService(request);
 
-    return apiOk({ ok: true });
-  } catch (error) {
-    return handleProfileError(error);
-  }
+  return apiOk({ ok: true });
 }
 
 export async function updateProfileController(request: Request) {
-  try {
-    assertSameOriginOrBearerRequest(request);
-    assertGlobalApiRateLimit(request);
-    assertApiRateLimit(request, "profile:mutation");
+  assertSameOriginOrBearerRequest(request);
+  assertGlobalApiRateLimit(request);
+  assertApiRateLimit(request, "profile:mutation");
 
-    const body = await readJsonBody(request);
-    const parsed = parseProfileUpdateRequest(body);
+  const body = await readJsonBody(request);
+  const parsed = parseProfileUpdateRequest(body);
 
-    if (!parsed.ok) {
-      return handleApiError(new ApiError(parsed.error, 400));
-    }
-
-    const user = await updateProfileService(parsed.data, request);
-
-    return apiOk({ user });
-  } catch (error) {
-    return handleProfileError(error);
+  if (!parsed.ok) {
+    throw new ApiError(parsed.error, 400);
   }
+
+  const user = await updateProfileService(parsed.data, request);
+
+  return apiOk({ user });
 }
 
 export async function updateAvatarController(request: Request) {
-  try {
-    assertSameOriginOrBearerRequest(request);
-    assertGlobalApiRateLimit(request);
-    assertApiRateLimit(request, "profile:avatar");
+  assertSameOriginOrBearerRequest(request);
+  assertGlobalApiRateLimit(request);
+  assertApiRateLimit(request, "profile:avatar");
 
-    const parsed = await parseAvatarRequest(request);
+  const parsed = await parseAvatarRequest(request);
 
-    if (!parsed.ok) {
-      return handleApiError(new ApiError(parsed.error, 400));
-    }
-
-    const user = await updateAvatarService(parsed.data, request);
-
-    return apiOk({ user });
-  } catch (error) {
-    return handleProfileError(error);
+  if (!parsed.ok) {
+    throw new ApiError(parsed.error, 400);
   }
+
+  const user = await updateAvatarService(parsed.data, request);
+
+  return apiOk({ user });
 }
 
 export async function changePasswordController(request: Request) {
-  try {
-    assertSameOriginOrBearerRequest(request);
-    assertGlobalApiRateLimit(request);
-    assertApiRateLimit(request, "profile:password");
+  assertSameOriginOrBearerRequest(request);
+  assertGlobalApiRateLimit(request);
+  assertApiRateLimit(request, "profile:password");
 
-    const body = await readJsonBody(request);
-    const parsed = parsePasswordRequest(body);
+  const body = await readJsonBody(request);
+  const parsed = parsePasswordRequest(body);
 
-    if (!parsed.ok) {
-      return handleApiError(new ApiError(parsed.error, 400));
-    }
-
-    const result = await changePasswordService(parsed.data, request);
-
-    return apiOk({
-      user: result.user,
-      ...(result.tokens ?? {}),
-    });
-  } catch (error) {
-    return handleProfileError(error);
+  if (!parsed.ok) {
+    throw new ApiError(parsed.error, 400);
   }
-}
 
-function handleProfileError(error: unknown) {
-  return handleApiError(error);
+  const result = await changePasswordService(parsed.data, request);
+
+  return apiOk({
+    user: result.user,
+    ...(result.tokens ?? {}),
+  });
 }

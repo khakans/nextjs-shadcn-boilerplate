@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { Prisma } from "@/lib/generated/prisma/client";
+import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
 import { handleSendPasswordResetEmailJob } from "./handlers/send-password-reset-email";
@@ -28,9 +29,11 @@ export async function startJobsWorker() {
     defaultLockTimeoutMs,
   );
 
-  console.info(
-    `[jobs] Worker ${workerId} started. pollIntervalMs=${pollIntervalMs} lockTimeoutMs=${lockTimeoutMs}`,
-  );
+  logger.info("[jobs] Worker started.", {
+    workerId,
+    pollIntervalMs,
+    lockTimeoutMs,
+  });
 
   while (true) {
     try {
@@ -44,7 +47,7 @@ export async function startJobsWorker() {
 
       await processJob(job);
     } catch (error) {
-      console.error("[jobs] Worker loop error", error);
+      logger.error("[jobs] Worker loop error", error);
       await sleep(pollIntervalMs);
     }
   }
@@ -97,7 +100,10 @@ async function processJob(job: LockedJob) {
         lastError: null,
       },
     });
-    console.info(`[jobs] Completed ${job.type} job ${job.id}.`);
+    logger.info("[jobs] Job completed.", {
+      jobId: job.id,
+      jobType: job.type,
+    });
   } catch (error) {
     const nextAttempts = job.attempts + 1;
     const lastError = getErrorMessage(error);
@@ -119,15 +125,23 @@ async function processJob(job: LockedJob) {
     });
 
     if (hasAttemptsLeft) {
-      console.warn(
-        `[jobs] Retrying ${job.type} job ${job.id}. attempt=${nextAttempts}/${job.maxAttempts} error=${lastError}`,
-      );
+      logger.warn("[jobs] Job retry scheduled.", {
+        jobId: job.id,
+        jobType: job.type,
+        attempts: nextAttempts,
+        maxAttempts: job.maxAttempts,
+        error,
+      });
       return;
     }
 
-    console.error(
-      `[jobs] Failed ${job.type} job ${job.id}. attempts=${nextAttempts}/${job.maxAttempts} error=${lastError}`,
-    );
+    logger.error("[jobs] Job failed.", {
+      jobId: job.id,
+      jobType: job.type,
+      attempts: nextAttempts,
+      maxAttempts: job.maxAttempts,
+      error,
+    });
   }
 }
 

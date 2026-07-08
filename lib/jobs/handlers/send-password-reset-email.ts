@@ -4,6 +4,7 @@ import {
   maskEmail,
   sendPasswordResetEmail,
 } from "@/lib/auth/password-reset-email";
+import { logger } from "@/lib/logger";
 
 const passwordResetEmailPayloadSchema = z.object({
   userId: z.uuid(),
@@ -20,7 +21,8 @@ export async function handleSendPasswordResetEmailJob(payload: unknown) {
   }
 
   await sendPasswordResetEmail(parsed.data);
-  console.info(
-    `[jobs] Password reset email sent to ${maskEmail(parsed.data.email)} for user ${parsed.data.userId}.`,
-  );
+  logger.info("[jobs] Password reset email sent.", {
+    email: maskEmail(parsed.data.email),
+    userId: parsed.data.userId,
+  });
 }

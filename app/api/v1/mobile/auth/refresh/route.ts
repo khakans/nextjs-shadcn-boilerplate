@@ -1,5 +1,6 @@
 import { mobileRefreshController } from "../_modules/controller";
+import { withApiMiddleware } from "@/lib/api-middleware";
 
 export const runtime = "nodejs";
 
-export const POST = mobileRefreshController;
+export const POST = withApiMiddleware(mobileRefreshController);

@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import { NextResponse } from "next/server";
 
+import { withApiMiddleware } from "@/lib/api-middleware";
 import { ApiError } from "@/lib/api-response";
 import { assertSameOriginRequest } from "@/lib/auth/csrf";
 import {
@@ -10,28 +11,31 @@ import { issueAuthSession } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 
-export async function POST(request: Request) {
-  try {
-    assertSameOriginRequest(request);
+async function linkGoogleRoute(request: Request) {
+  assertSameOriginRequest(request);
 
-    const formData = await request.formData();
-    const intent = formData.get("intent");
+  const formData = await request.formData();
+  const intent = formData.get("intent");
 
-    if (intent === "cancel") {
-      await clearGoogleLinkRequestCookie();
-      redirect("/login");
-    }
+  if (intent === "cancel") {
+    await clearGoogleLinkRequestCookie();
 
-    const user = await linkGoogleAccount();
-
-    await issueAuthSession(user, request);
-  } catch (error) {
-    if (error instanceof ApiError) {
-      redirect("/login?authError=google");
-    }
-
-    throw error;
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  redirect("/");
+  const user = await linkGoogleAccount();
+
+  await issueAuthSession(user, request);
+
+  return NextResponse.redirect(new URL("/", request.url));
 }
+
+export const POST = withApiMiddleware(linkGoogleRoute, {
+  onApiError(error, request) {
+    if (error instanceof ApiError) {
+      return NextResponse.redirect(new URL("/login?authError=google", request.url));
+    }
+
+    return undefined;
+  },
+});

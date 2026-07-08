@@ -2,7 +2,6 @@ import {
   ApiError,
   apiCreated,
   apiOk,
-  handleApiError,
 } from "@/lib/api-response";
 import {
   assertSameOriginOrBearerRequest,
@@ -28,86 +27,62 @@ import {
 } from "./service";
 
 export async function signupController(request: Request) {
-  try {
-    assertSameOriginRequest(request);
-    assertGlobalApiRateLimit(request);
-    assertApiRateLimit(request, "auth:signup");
+  assertSameOriginRequest(request);
+  assertGlobalApiRateLimit(request);
+  assertApiRateLimit(request, "auth:signup");
 
-    const body = await readJsonBody(request);
-    const parsed = parseSignupRequest(body);
+  const body = await readJsonBody(request);
+  const parsed = parseSignupRequest(body);
 
-    if (!parsed.ok) {
-      return handleApiError(new ApiError(parsed.error, 400));
-    }
-
-    const user = await signupService(parsed.data);
-    await issueAuthSession(user, request);
-
-    return apiCreated({ user });
-  } catch (error) {
-    return handleAuthError(error);
+  if (!parsed.ok) {
+    throw new ApiError(parsed.error, 400);
   }
+
+  const user = await signupService(parsed.data);
+  await issueAuthSession(user, request);
+
+  return apiCreated({ user });
 }
 
 export async function loginController(request: Request) {
-  try {
-    assertSameOriginRequest(request);
-    assertGlobalApiRateLimit(request);
-    assertApiRateLimit(request, "auth:login");
+  assertSameOriginRequest(request);
+  assertGlobalApiRateLimit(request);
+  assertApiRateLimit(request, "auth:login");
 
-    const body = await readJsonBody(request);
-    const parsed = parseLoginRequest(body);
+  const body = await readJsonBody(request);
+  const parsed = parseLoginRequest(body);
 
-    if (!parsed.ok) {
-      return handleApiError(new ApiError(parsed.error, 400));
-    }
-
-    const user = await loginService(parsed.data);
-    await issueAuthSession(user, request);
-
-    return apiOk({ user });
-  } catch (error) {
-    return handleAuthError(error);
+  if (!parsed.ok) {
+    throw new ApiError(parsed.error, 400);
   }
+
+  const user = await loginService(parsed.data);
+  await issueAuthSession(user, request);
+
+  return apiOk({ user });
 }
 
 export async function logoutController(request: Request) {
-  try {
-    assertSameOriginOrBearerRequest(request);
-    assertGlobalApiRateLimit(request);
-    await logoutService(request);
+  assertSameOriginOrBearerRequest(request);
+  assertGlobalApiRateLimit(request);
+  await logoutService(request);
 
-    return apiOk({ ok: true });
-  } catch (error) {
-    return handleAuthError(error);
-  }
+  return apiOk({ ok: true });
 }
 
 export async function refreshController(request: Request) {
-  try {
-    assertSameOriginRequest(request);
-    assertGlobalApiRateLimit(request);
-    assertApiRateLimit(request, "auth:refresh");
+  assertSameOriginRequest(request);
+  assertGlobalApiRateLimit(request);
+  assertApiRateLimit(request, "auth:refresh");
 
-    const user = await refreshService(request);
+  const user = await refreshService(request);
 
-    return apiOk({ user });
-  } catch (error) {
-    return handleAuthError(error);
-  }
+  return apiOk({ user });
 }
 
 export async function currentUserController(request: Request) {
-  try {
-    assertGlobalApiRateLimit(request);
-    const user = await currentUserService(request);
+  assertGlobalApiRateLimit(request);
+  const user = await currentUserService(request);
 
-    return apiOk({ user });
-  } catch (error) {
-    return handleAuthError(error);
-  }
-}
-
-function handleAuthError(error: unknown) {
-  return handleApiError(error);
+  return apiOk({ user });
 }

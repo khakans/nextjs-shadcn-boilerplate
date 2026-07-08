@@ -2,8 +2,9 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public readonly status = 400,
+    options?: ErrorOptions,
   ) {
-    super(message);
+    super(message, options);
   }
 }
 
