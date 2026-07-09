@@ -17,7 +17,7 @@ import {
 import type { AuthUser } from "@/lib/auth"
 import { getMessages } from "@/lib/i18n"
 import { useLanguagePreference } from "@/lib/theme"
-import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, Settings2Icon, FrameIcon, PieChartIcon, MapIcon } from "lucide-react"
+import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, Settings2Icon, FrameIcon, PieChartIcon, MapIcon, LayoutDashboardIcon } from "lucide-react"
 
 export function AppSidebar({
   user,
@@ -28,7 +28,6 @@ export function AppSidebar({
   const pathname = usePathname()
   const { language } = useLanguagePreference()
   const t = getMessages(language)
-  const isCompaniesActive = isActivePath(pathname, "/companies")
   const data = {
     user,
     teams: [
@@ -59,34 +58,32 @@ export function AppSidebar({
     ],
     navMain: [
       {
+        title: t.dashboard,
+        url: "/dashboard",
+        icon: (
+          <LayoutDashboardIcon
+          />
+        ),
+        isActive: isActivePath(pathname, "/dashboard") || pathname === "/",
+      },
+      {
         title: t.settings,
         url: "#",
         icon: (
           <Settings2Icon
           />
         ),
-        isActive: isCompaniesActive,
+        isActive: isActivePath(pathname, "/companies") || isActivePath(pathname, "/teams"),
         items: [
           {
-            title: t.general,
-            url: "#",
-          },
-          {
-            isActive: isCompaniesActive,
+            isActive: isActivePath(pathname, "/companies"),
             title: t.companies,
             url: "/companies",
           },
           {
+            isActive: isActivePath(pathname, "/teams"),
             title: t.teams,
-            url: "#",
-          },
-          {
-            title: t.billing,
-            url: "#",
-          },
-          {
-            title: t.limits,
-            url: "#",
+            url: "/teams",
           },
         ],
       },

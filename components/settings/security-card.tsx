@@ -3,8 +3,8 @@
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  CircleChevronRightIcon,
   HistoryIcon,
-  FileSearchIcon,
   KeyRoundIcon,
   LogOutIcon,
   MonitorSmartphoneIcon,
@@ -886,11 +886,12 @@ function AuditTrailTable({
                     <Button
                       type="button"
                       variant="ghost"
-                      size="icon-sm"
+                      size="sm"
                       aria-label={t.viewAuditLogDetail}
                       onClick={() => onOpenDetail(auditTrail)}
                     >
-                      <FileSearchIcon />
+                      <CircleChevronRightIcon />
+                      {t.detail}
                     </Button>
                   </td>
                 </tr>

@@ -10,8 +10,11 @@ import {
   type CompanyInput,
 } from "@/features/companies/api/companies-client";
 import { getApiErrorMessage } from "@/lib/api/http-client";
+import type { getMessages } from "@/lib/i18n";
 
-export function useCompanies() {
+type Messages = ReturnType<typeof getMessages>;
+
+export function useCompanies(t: Messages) {
   const [company, setCompany] = React.useState<Company | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -29,7 +32,7 @@ export function useCompanies() {
         }
       } catch (loadError) {
         if (isMounted) {
-          setError(getApiErrorMessage(loadError, "Failed to load company."));
+          setError(getApiErrorMessage(loadError, t.companyLoadFailed));
         }
       } finally {
         if (isMounted) {
@@ -43,7 +46,7 @@ export function useCompanies() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [t.companyLoadFailed]);
 
   async function loadCompany() {
     setIsLoading(true);
@@ -53,7 +56,7 @@ export function useCompanies() {
       const payload = await getCompany();
       setCompany(payload.company);
     } catch (loadError) {
-      setError(getApiErrorMessage(loadError, "Failed to load company."));
+      setError(getApiErrorMessage(loadError, t.companyLoadFailed));
     } finally {
       setIsLoading(false);
     }
@@ -69,12 +72,12 @@ export function useCompanies() {
         setCompany(payload.company);
       }
 
-      toast.success("Company information saved.");
+      toast.success(t.companyInfoSaved);
 
       return payload.company;
     } catch (saveError) {
       toast.error(
-        getApiErrorMessage(saveError, "Failed to save company information."),
+        getApiErrorMessage(saveError, t.companySaveFailed),
       );
       throw saveError;
     } finally {

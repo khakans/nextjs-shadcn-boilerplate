@@ -48,50 +48,51 @@ import type {
 } from "@/features/companies/api/companies-client";
 import { useCompanies } from "@/features/companies/hooks/use-companies";
 import type { AuthUser } from "@/lib/auth";
+import { getMessages } from "@/lib/i18n";
+import { useLanguagePreference } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 const maxLogoSize = 5 * 1024 * 1024;
 const allowedLogoTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-const companySchema = z.object({
-  address: z
-    .string()
-    .trim()
-    .max(1000, "Address must be 1000 characters or fewer."),
-  currency: z
-    .string()
-    .trim()
-    .regex(/^[A-Za-z]{3}$/, "Currency must use a 3-letter ISO code."),
-  email: z
-    .string()
-    .trim()
-    .refine(
-      (value) => value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
-      "Email is invalid.",
-    ),
-  name: z
-    .string()
-    .trim()
-    .min(2, "Company name must be at least 2 characters.")
-    .max(150, "Company name must be 150 characters or fewer."),
-  phone: z
-    .string()
-    .trim()
-    .refine(
-      (value) => value === "" || /^[+0-9\s().-]{6,30}$/.test(value),
-      "Phone number is invalid.",
-    ),
-  taxNumber: z
-    .string()
-    .trim()
-    .max(80, "Tax number must be 80 characters or fewer."),
-  timezone: z.string().trim().min(1, "Timezone is required."),
-});
+type Messages = ReturnType<typeof getMessages>;
 
-type CompanyFormValues = z.infer<typeof companySchema>;
+function getCompanySchema(t: Messages) {
+  return z.object({
+    address: z.string().trim().max(1000, t.addressMax),
+    currency: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z]{3}$/, t.companyCurrencyInvalid),
+    email: z
+      .string()
+      .trim()
+      .refine(
+        (value) => value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+        t.emailInvalid,
+      ),
+    name: z.string().trim().min(2, t.companyNameMin).max(150, t.companyNameMax),
+    phone: z
+      .string()
+      .trim()
+      .refine(
+        (value) => value === "" || /^[+0-9\s().-]{6,30}$/.test(value),
+        t.companyPhoneInvalid,
+      ),
+    taxNumber: z
+      .string()
+      .trim()
+      .max(80, t.companyTaxNumberMax),
+    timezone: z.string().trim().min(1, t.companyTimezoneRequired),
+  });
+}
+
+type CompanyFormValues = z.infer<ReturnType<typeof getCompanySchema>>;
 
 export function CompaniesShell({ user }: { user: AuthUser }) {
-  const companies = useCompanies();
+  const { language } = useLanguagePreference();
+  const t = getMessages(language);
+  const companies = useCompanies(t);
 
   return (
     <SidebarProvider>
@@ -104,7 +105,7 @@ export function CompaniesShell({ user }: { user: AuthUser }) {
               orientation="vertical"
               className="mr-2 data-vertical:h-4 data-vertical:self-auto"
             />
-            <PageBreadcrumb items={[{ label: "Companies" }]} />
+            <PageBreadcrumb items={[{ label: t.companies }]} />
           </div>
           <div className="ml-auto px-4">
             <LanguageSwitcher />
@@ -114,11 +115,10 @@ export function CompaniesShell({ user }: { user: AuthUser }) {
         <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
           <div>
             <h1 className="text-2xl font-semibold tracking-normal">
-              Company Information
+              {t.companyTitle}
             </h1>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              Manage the company profile used by this expense
-              management workspace.
+              {t.companyDescription}
             </p>
           </div>
 
@@ -128,6 +128,7 @@ export function CompaniesShell({ user }: { user: AuthUser }) {
             <CompanyErrorState
               message={companies.error}
               onRetry={companies.loadCompany}
+              t={t}
             />
           ) : (
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -135,8 +136,9 @@ export function CompaniesShell({ user }: { user: AuthUser }) {
                 company={companies.company}
                 isSaving={companies.isSaving}
                 onSave={companies.saveCompanyInfo}
+                t={t}
               />
-              <CompanySummary company={companies.company} />
+              <CompanySummary company={companies.company} t={t} />
             </div>
           )}
         </main>
@@ -149,16 +151,18 @@ function CompanyForm({
   company,
   isSaving,
   onSave,
+  t,
 }: {
   company: Company | null;
   isSaving: boolean;
   onSave: (input: CompanyInput) => Promise<Company | null>;
+  t: Messages;
 }) {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [logo, setLogo] = React.useState<string | null>(company?.logo ?? null);
   const [logoError, setLogoError] = React.useState<string | null>(null);
   const form = useForm<CompanyFormValues>({
-    resolver: zodResolver(companySchema),
+    resolver: zodResolver(getCompanySchema(t)),
     defaultValues: getCompanyDefaultValues(company),
     mode: "onBlur",
   });
@@ -192,18 +196,18 @@ function CompanyForm({
     setLogoError(null);
 
     if (!allowedLogoTypes.has(file.type)) {
-      setLogoError("Logo must be JPG, PNG, or WEBP.");
+      setLogoError(t.companyLogoInvalidType);
       event.currentTarget.value = "";
       return;
     }
 
     if (file.size > maxLogoSize) {
-      setLogoError("Logo must be 5 MB or smaller.");
+      setLogoError(t.companyLogoMaxSize);
       event.currentTarget.value = "";
       return;
     }
 
-    setLogo(await readFileAsDataUrl(file));
+    setLogo(await readFileAsDataUrl(file, t.companyLogoReadFailed));
     event.currentTarget.value = "";
   }
 
@@ -225,12 +229,12 @@ function CompanyForm({
     <Card>
       <CardHeader>
         <CardTitle>
-          {company ? "Company details" : "Create company information"}
+          {company ? t.companyDetailsTitle : t.companyCreateTitle}
         </CardTitle>
         <CardDescription>
           {company
-            ? "Update company identity, tax, and operating defaults."
-            : "No company record exists yet. Save this form to create it."}
+            ? t.companyUpdateDescription
+            : t.companyCreateDescription}
         </CardDescription>
       </CardHeader>
       <form onSubmit={form.handleSubmit(submitForm)}>
@@ -239,7 +243,7 @@ function CompanyForm({
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <LogoMark
                 logo={logo}
-                name={form.getValues("name") || company?.name || "Company"}
+                name={form.getValues("name") || company?.name || t.companies}
                 className="size-16 text-lg"
               />
               <div className="flex flex-wrap gap-2">
@@ -256,7 +260,7 @@ function CompanyForm({
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <UploadIcon />
-                  Upload logo
+                  {t.upload}
                 </Button>
                 <Button
                   type="button"
@@ -265,7 +269,7 @@ function CompanyForm({
                   onClick={() => setLogo(null)}
                 >
                   <XIcon />
-                  Remove
+                  {t.remove}
                 </Button>
               </div>
             </div>
@@ -273,7 +277,7 @@ function CompanyForm({
 
             <div className="grid gap-4 md:grid-cols-2">
               <Field data-invalid={Boolean(errors.name)}>
-                <FieldLabel htmlFor="company-name">Name</FieldLabel>
+                <FieldLabel htmlFor="company-name">{t.name}</FieldLabel>
                 <Input
                   id="company-name"
                   autoComplete="organization"
@@ -283,12 +287,12 @@ function CompanyForm({
                 <FieldError>{errors.name?.message}</FieldError>
               </Field>
               <Field data-invalid={Boolean(errors.email)}>
-                <FieldLabel htmlFor="company-email">Email</FieldLabel>
+                <FieldLabel htmlFor="company-email">{t.email}</FieldLabel>
                 <Input
                   id="company-email"
                   type="email"
                   autoComplete="email"
-                  placeholder="finance@example.com"
+                  placeholder={t.companyEmailPlaceholder}
                   aria-invalid={Boolean(errors.email)}
                   {...register("email")}
                 />
@@ -298,22 +302,24 @@ function CompanyForm({
 
             <div className="grid gap-4 md:grid-cols-2">
               <Field data-invalid={Boolean(errors.phone)}>
-                <FieldLabel htmlFor="company-phone">Phone</FieldLabel>
+                <FieldLabel htmlFor="company-phone">{t.mobileNumber}</FieldLabel>
                 <Input
                   id="company-phone"
                   type="tel"
                   autoComplete="tel"
-                  placeholder="+62 21 555 0100"
+                  placeholder={t.companyPhonePlaceholder}
                   aria-invalid={Boolean(errors.phone)}
                   {...register("phone")}
                 />
                 <FieldError>{errors.phone?.message}</FieldError>
               </Field>
               <Field data-invalid={Boolean(errors.taxNumber)}>
-                <FieldLabel htmlFor="company-tax-number">Tax number</FieldLabel>
+                <FieldLabel htmlFor="company-tax-number">
+                  {t.companyTaxNumber}
+                </FieldLabel>
                 <Input
                   id="company-tax-number"
-                  placeholder="NPWP / VAT ID"
+                  placeholder={t.companyTaxNumberHelp}
                   aria-invalid={Boolean(errors.taxNumber)}
                   {...register("taxNumber")}
                 />
@@ -323,7 +329,9 @@ function CompanyForm({
 
             <div className="grid gap-4 md:grid-cols-2">
               <Field data-invalid={Boolean(errors.timezone)}>
-                <FieldLabel htmlFor="company-timezone">Timezone</FieldLabel>
+                <FieldLabel htmlFor="company-timezone">
+                  {t.companyTimezone}
+                </FieldLabel>
                 <Input
                   id="company-timezone"
                   placeholder="Asia/Jakarta"
@@ -331,12 +339,12 @@ function CompanyForm({
                   {...register("timezone")}
                 />
                 <FieldDescription>
-                  Use an IANA timezone, for example Asia/Jakarta.
+                  {t.companyTimezoneHelp}
                 </FieldDescription>
                 <FieldError>{errors.timezone?.message}</FieldError>
               </Field>
               <Field data-invalid={Boolean(errors.currency)}>
-                <FieldLabel htmlFor="company-currency">Currency</FieldLabel>
+                <FieldLabel htmlFor="company-currency">{t.currency}</FieldLabel>
                 <Input
                   id="company-currency"
                   placeholder="IDR"
@@ -345,18 +353,18 @@ function CompanyForm({
                   {...register("currency")}
                 />
                 <FieldDescription>
-                  Use ISO 4217, for example IDR.
+                  {t.companyCurrencyHelp}
                 </FieldDescription>
                 <FieldError>{errors.currency?.message}</FieldError>
               </Field>
             </div>
 
             <Field data-invalid={Boolean(errors.address)}>
-              <FieldLabel htmlFor="company-address">Address</FieldLabel>
+              <FieldLabel htmlFor="company-address">{t.companyAddress}</FieldLabel>
               <Textarea
                 id="company-address"
                 autoComplete="street-address"
-                placeholder="Company billing address"
+                placeholder={t.companyBillingAddressPlaceholder}
                 aria-invalid={Boolean(errors.address)}
                 {...register("address")}
               />
@@ -370,7 +378,7 @@ function CompanyForm({
             disabled={isSaving || (!isDirty && logo === companyLogo)}
           >
             <SaveIcon />
-            {isSaving ? "Saving..." : "Save company"}
+            {isSaving ? t.saving : t.saveChanges}
           </Button>
         </CardFooter>
       </form>
@@ -378,39 +386,39 @@ function CompanyForm({
   );
 }
 
-function CompanySummary({ company }: { company: Company | null }) {
+function CompanySummary({ company, t }: { company: Company | null; t: Messages }) {
   return (
     <aside className="grid gap-4 xl:self-start">
       <Card>
         <CardHeader>
-          <CardTitle>Your company</CardTitle>
+          <CardTitle>{t.companySummaryTitle}</CardTitle>
           <CardDescription>
             {company
-              ? "This is the company profile used by this workspace."
-              : "No company record exists yet."}
+              ? t.companySummaryDescription
+              : t.companyNoRecord}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="flex items-center gap-3">
-            <LogoMark logo={company?.logo ?? null} name={company?.name ?? "Company"} />
+            <LogoMark logo={company?.logo ?? null} name={company?.name ?? t.companies} />
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">
-                {company?.name ?? "Not configured"}
+                {company?.name ?? t.companyNotConfigured}
               </p>
               <p className="text-sm text-muted-foreground">
                 {company ? (
-                  <CompanyStatusBadge status={company.status} />
+                  <CompanyStatusBadge status={company.status} t={t} />
                 ) : (
-                  "Save the form to create it."
+                  t.companySavedHelp
                 )}
               </p>
             </div>
           </div>
-          <SummaryItem label="Currency" value={company?.currency ?? "-"} />
-          <SummaryItem label="Timezone" value={company?.timezone ?? "-"} />
-          <SummaryItem label="Email" value={company?.email ?? "-"} />
-          <SummaryItem label="Phone" value={company?.phone ?? "-"} />
-          <SummaryItem label="Tax number" value={company?.taxNumber ?? "-"} />
+          <SummaryItem label={t.currency} value={company?.currency ?? "-"} />
+          <SummaryItem label={t.companyTimezone} value={company?.timezone ?? "-"} />
+          <SummaryItem label={t.email} value={company?.email ?? "-"} />
+          <SummaryItem label={t.mobileNumber} value={company?.phone ?? "-"} />
+          <SummaryItem label={t.companyTaxNumber} value={company?.taxNumber ?? "-"} />
         </CardContent>
       </Card>
     </aside>
@@ -470,7 +478,13 @@ function LogoMark({
   );
 }
 
-function CompanyStatusBadge({ status }: { status: CompanyStatus }) {
+function CompanyStatusBadge({
+  status,
+  t,
+}: {
+  status: CompanyStatus;
+  t: Messages;
+}) {
   return (
     <span
       className={cn(
@@ -480,7 +494,7 @@ function CompanyStatusBadge({ status }: { status: CompanyStatus }) {
           : "bg-muted text-muted-foreground",
       )}
     >
-      {status === "ACTIVE" ? "Active" : "Inactive"}
+      {status === "ACTIVE" ? t.active : t.inactive}
     </span>
   );
 }
@@ -497,22 +511,24 @@ function CompanyFormSkeleton() {
 function CompanyErrorState({
   message,
   onRetry,
+  t,
 }: {
   message: string;
   onRetry: () => void;
+  t: Messages;
 }) {
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-destructive/30 bg-destructive/5 p-5 text-destructive sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-3">
         <AlertCircleIcon className="mt-0.5 size-4 shrink-0" />
         <div>
-          <h2 className="text-sm font-medium">Unable to load company</h2>
+          <h2 className="text-sm font-medium">{t.companyUnableToLoad}</h2>
           <p className="mt-1 text-sm">{message}</p>
         </div>
       </div>
       <Button type="button" variant="outline" onClick={onRetry}>
         <RefreshCcwIcon />
-        Retry
+        {t.retry}
       </Button>
     </div>
   );
@@ -530,7 +546,7 @@ function getCompanyDefaultValues(company: Company | null): CompanyFormValues {
   };
 }
 
-function readFileAsDataUrl(file: File) {
+function readFileAsDataUrl(file: File, errorMessage: string) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
 
@@ -538,7 +554,7 @@ function readFileAsDataUrl(file: File) {
       if (typeof reader.result === "string") {
         resolve(reader.result);
       } else {
-        reject(new Error("Unable to read logo file."));
+        reject(new Error(errorMessage));
       }
     });
     reader.addEventListener("error", () => reject(reader.error));

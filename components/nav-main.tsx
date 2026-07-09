@@ -39,39 +39,52 @@ export function NavMain({
       <SidebarGroupLabel>{groupLabel}</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
-          <Collapsible
-            key={item.title}
-            defaultOpen={item.isActive}
-            className="group/collapsible"
-            render={<SidebarMenuItem />}
-          >
-            <CollapsibleTrigger
-              render={
-                <SidebarMenuButton isActive={item.isActive} tooltip={item.title} />
-              }
+          item.items?.length ? (
+            <Collapsible
+              key={item.title}
+              defaultOpen={item.isActive}
+              className="group/collapsible"
+              render={<SidebarMenuItem />}
             >
-              {item.icon}
-              <span>{item.title}</span>
-              <ChevronRightIcon className="ml-auto transition-transform duration-200 group-data-open/collapsible:rotate-90" />
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <SidebarMenuSub>
-                {item.items?.map((subItem) => (
-                  <SidebarMenuSubItem key={subItem.title}>
-                    {subItem.isActive ? (
-                      <BadgeCheckIcon className="pointer-events-none absolute left-[-17px] top-1/2 size-4 -translate-y-1/2 text-primary" />
-                    ) : null}
-                    <SidebarMenuSubButton render={<a href={subItem.url} />}>
+              <CollapsibleTrigger
+                render={
+                  <SidebarMenuButton isActive={item.isActive} tooltip={item.title} />
+                }
+              >
+                {item.icon}
+                <span>{item.title}</span>
+                <ChevronRightIcon className="ml-auto transition-transform duration-200 group-data-open/collapsible:rotate-90" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarMenuSub>
+                  {item.items.map((subItem) => (
+                    <SidebarMenuSubItem key={subItem.title}>
                       {subItem.isActive ? (
-                        <span className="sr-only">Active:</span>
+                        <BadgeCheckIcon className="pointer-events-none absolute left-[-17px] top-1/2 size-4 -translate-y-1/2 text-primary" />
                       ) : null}
-                      <span>{subItem.title}</span>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                ))}
-              </SidebarMenuSub>
-            </CollapsibleContent>
-          </Collapsible>
+                      <SidebarMenuSubButton render={<a href={subItem.url} />}>
+                        {subItem.isActive ? (
+                          <span className="sr-only">Active:</span>
+                        ) : null}
+                        <span>{subItem.title}</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  ))}
+                </SidebarMenuSub>
+              </CollapsibleContent>
+            </Collapsible>
+          ) : (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton
+                isActive={item.isActive}
+                render={<a href={item.url} />}
+                tooltip={item.title}
+              >
+                {item.icon}
+                <span>{item.title}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )
         ))}
       </SidebarMenu>
     </SidebarGroup>

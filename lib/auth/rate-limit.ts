@@ -22,7 +22,8 @@ type ApiRateLimitAction =
   | "companies:mutation"
   | "profile:mutation"
   | "profile:avatar"
-  | "profile:password";
+  | "profile:password"
+  | "teams:mutation";
 
 type ApiRateLimitConfig = {
   limit: number;
@@ -83,6 +84,10 @@ const apiRateLimitConfig = {
   "profile:password": {
     limit: 10,
     windowMs: 10 * 60 * 1000,
+  },
+  "teams:mutation": {
+    limit: 30,
+    windowMs: 60 * 1000,
   },
 } satisfies Record<ApiRateLimitAction, ApiRateLimitConfig>;
 

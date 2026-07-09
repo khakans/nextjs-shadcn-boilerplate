@@ -18,6 +18,12 @@ export const auditTrailActions = {
   avatarUpdated: "AVATAR_UPDATED",
   companyCreated: "COMPANY_CREATED",
   companyUpdated: "COMPANY_UPDATED",
+  teamCreated: "TEAM_CREATED",
+  teamUpdated: "TEAM_UPDATED",
+  teamDeactivated: "TEAM_DEACTIVATED",
+  teamMemberAdded: "TEAM_MEMBER_ADDED",
+  teamMemberUpdated: "TEAM_MEMBER_UPDATED",
+  teamMemberRemoved: "TEAM_MEMBER_REMOVED",
   accountDeactivated: "ACCOUNT_DEACTIVATED",
   sessionRevoked: "SESSION_REVOKED",
   otherSessionsRevoked: "OTHER_SESSIONS_REVOKED",
@@ -31,6 +37,8 @@ export const auditTrailEntities = {
   user: "User",
   userSession: "UserSession",
   company: "Company",
+  team: "Team",
+  teamMember: "TeamMember",
 } as const;
 
 export const auditTrailStatuses = {
