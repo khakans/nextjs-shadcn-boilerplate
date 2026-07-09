@@ -277,7 +277,11 @@ export function PersonalInfoForm({
           </FieldGroup>
         </CardContent>
         <CardFooter className="justify-end">
-          <Button type="submit" disabled={!isDirty || isSubmitting}>
+          <Button
+            type="submit"
+            className="w-full sm:w-auto"
+            disabled={!isDirty || isSubmitting}
+          >
             <SaveIcon />
             {isSubmitting ? t.saveProfileDetailsPending : t.saveChanges}
           </Button>

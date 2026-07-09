@@ -117,7 +117,7 @@ export function ProfilePhotoCard({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+        <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:text-left">
           <div className="relative w-fit">
             <Avatar className="size-28 text-3xl">
               <AvatarImage src={avatarSrc} alt={user.name} />
@@ -144,7 +144,7 @@ export function ProfilePhotoCard({
                 {user.email}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
               <Button
                 type="button"
                 variant="outline"

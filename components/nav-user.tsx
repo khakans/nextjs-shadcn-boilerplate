@@ -1,9 +1,10 @@
 "use client"
 
+import * as React from "react"
+
 import {
   Avatar,
   AvatarFallback,
-  AvatarImage,
 } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -28,6 +29,7 @@ import {
 import { logout } from "@/features/auth/api/auth-client"
 import type { AuthUser } from "@/lib/auth"
 import { getMessages } from "@/lib/i18n"
+import { getStorageFileUrl } from "@/lib/storage-url"
 import {
   useAccentColor,
   useLanguagePreference,
@@ -47,6 +49,8 @@ import {
   GlobeIcon,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
+
+const loadedAvatarUrls = new Set<string>()
 
 const accentOptions: {
   labelKey: "blue" | "red" | "orange" | "purple" | "neutral"
@@ -122,10 +126,7 @@ export function NavUser({
               <SidebarMenuButton size="lg" className="aria-expanded:bg-muted" />
             }
           >
-            <Avatar>
-              <AvatarImage src={user.avatarUrl ?? ""} alt={user.name} />
-              <AvatarFallback>{getUserInitials(user.name)}</AvatarFallback>
-            </Avatar>
+            <SidebarUserAvatar user={user} />
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{user.name}</span>
               <span className="truncate text-xs">{user.email}</span>
@@ -141,10 +142,7 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                  <Avatar>
-                    <AvatarImage src={user.avatarUrl ?? ""} alt={user.name} />
-                    <AvatarFallback>{getUserInitials(user.name)}</AvatarFallback>
-                  </Avatar>
+                  <SidebarUserAvatar user={user} />
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">{user.name}</span>
                     <span className="truncate text-xs">{user.email}</span>
@@ -241,6 +239,58 @@ export function NavUser({
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
+  )
+}
+
+function SidebarUserAvatar({ user }: { user: AuthUser }) {
+  const avatarUrl = getStorageFileUrl(user.avatarUrl)
+  const [loadedUrl, setLoadedUrl] = React.useState(() =>
+    avatarUrl && loadedAvatarUrls.has(avatarUrl) ? avatarUrl : "",
+  )
+  const isLoaded = Boolean(avatarUrl) && (
+    loadedAvatarUrls.has(avatarUrl) || loadedUrl === avatarUrl
+  )
+
+  React.useEffect(() => {
+    if (!avatarUrl || loadedAvatarUrls.has(avatarUrl)) {
+      return
+    }
+
+    let isActive = true
+    const image = new window.Image()
+
+    image.onload = () => {
+      loadedAvatarUrls.add(avatarUrl)
+
+      if (isActive) {
+        setLoadedUrl(avatarUrl)
+      }
+    }
+    image.src = avatarUrl
+
+    return () => {
+      isActive = false
+    }
+  }, [avatarUrl])
+
+  return (
+    <Avatar>
+      {avatarUrl ? (
+        <>
+          <span
+            aria-hidden="true"
+            className={`absolute inset-0 rounded-full bg-cover bg-center ${
+              isLoaded ? "opacity-100" : "opacity-0"
+            }`}
+            style={{ backgroundImage: `url("${avatarUrl}")` }}
+          />
+          <span className="sr-only">{user.name}</span>
+        </>
+      ) : null}
+      {!avatarUrl || !isLoaded ? (
+        <AvatarFallback>{getUserInitials(user.name)}</AvatarFallback>
+      ) : null}
+    </Avatar>
   )
 }
 

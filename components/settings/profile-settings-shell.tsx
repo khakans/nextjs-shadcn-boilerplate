@@ -257,7 +257,7 @@ function SettingsNav({
   t: ReturnType<typeof getMessages>;
 }) {
   return (
-    <aside className="lg:sticky lg:top-4 lg:self-start">
+    <aside className="hidden lg:sticky lg:top-4 lg:block lg:self-start">
       <nav
         aria-label="Settings sections"
         className="scrollbar-minimal flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0"

@@ -84,7 +84,7 @@ export function DangerZoneCard({ user }: { user: ProfileSettingsUser }) {
           <Button
             type="button"
             variant="destructive"
-            className="w-fit"
+            className="w-full sm:w-fit"
             onClick={() => {
               setConfirmation("");
               setIsOpen(true);
