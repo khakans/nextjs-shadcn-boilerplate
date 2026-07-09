@@ -788,20 +788,7 @@ function TeamForm({
             </Button>
           </CardFooter>
         ) : (
-          <DialogFooter className="mt-5 sm:justify-between">
-            {!isCreate ? (
-              <Button
-                type="button"
-                variant="destructive"
-                disabled={!team || team.status === "inactive" || isSaving}
-                onClick={handleDeactivate}
-              >
-                <BanIcon />
-                {t.deactivate}
-              </Button>
-            ) : (
-              <span />
-            )}
+          <DialogFooter className="mt-5">
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <DialogClose
                 render={

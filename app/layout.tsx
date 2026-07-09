@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { Toaster } from "@/components/ui/sonner";
+import type { LanguagePreference } from "@/lib/theme";
+import { ThemePreferenceProvider } from "@/lib/theme";
 import { themeInitializerScript } from "@/lib/theme-script";
 import "./globals.css";
 
@@ -20,14 +23,19 @@ export const metadata: Metadata = {
   description: "Platform",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const languageCookie = cookieStore.get("expensesman-language")?.value;
+  const initialLanguage: LanguagePreference =
+    languageCookie === "id" ? "id" : "en";
+
   return (
     <html
-      lang="en"
+      lang={initialLanguage}
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
@@ -35,7 +43,9 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitializerScript }} />
       </head>
       <body className="min-h-full flex flex-col">
-        {children}
+        <ThemePreferenceProvider initialLanguage={initialLanguage}>
+          {children}
+        </ThemePreferenceProvider>
         <Toaster />
       </body>
     </html>

@@ -536,7 +536,7 @@ export const messages = {
     cancel: "Batal",
     categories: "Kategori",
     categoriesDescription:
-      "Siapkan kategori expense untuk pengelompokan transaksi dan laporan.",
+      "Kelola kategori expense untuk pengelompokan transaksi dan laporan.",
     company: "Perusahaan",
     companies: "Perusahaan",
     companyAddress: "Alamat",
@@ -578,7 +578,7 @@ export const messages = {
       "Perbarui identitas perusahaan, pajak, dan default operasional.",
     currency: "Mata uang",
     currencyDescription:
-      "Siapkan mata uang yang dipakai untuk expense, reimbursement, dan laporan.",
+      "Kelola mata uang yang dipakai untuk expense, reimbursement, dan laporan.",
     confirm: "Konfirmasi",
     confirmPasswordChange: "Konfirmasi perubahan password",
     confirmPasswordChangeDescription:
@@ -689,7 +689,7 @@ export const messages = {
     password: "Password",
     paymentMethods: "Metode Pembayaran",
     paymentMethodsDescription:
-      "Siapkan metode pembayaran yang dipakai saat mencatat transaksi expense.",
+      "Kelola metode pembayaran yang dipakai saat mencatat transaksi expense.",
     passwordChanged: "Password berhasil diubah.",
     passwordChangeFailed: "Password gagal diubah.",
     passwordConfirmationMismatch: "Konfirmasi password tidak cocok.",

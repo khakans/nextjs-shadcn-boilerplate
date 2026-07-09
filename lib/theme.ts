@@ -12,6 +12,29 @@ const LANGUAGE_STORAGE_KEY = "expensesman-language";
 const THEME_CHANGE_EVENT = "expensesman-theme-change";
 const ACCENT_CHANGE_EVENT = "expensesman-accent-change";
 const LANGUAGE_CHANGE_EVENT = "expensesman-language-change";
+const DEFAULT_ACCENT_COLOR: AccentColor = "blue";
+const DEFAULT_LANGUAGE_PREFERENCE: LanguagePreference = "en";
+const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
+
+const ThemePreferenceContext = React.createContext<{
+  initialLanguage: LanguagePreference;
+}>({
+  initialLanguage: DEFAULT_LANGUAGE_PREFERENCE,
+});
+
+export function ThemePreferenceProvider({
+  children,
+  initialLanguage,
+}: {
+  children: React.ReactNode;
+  initialLanguage: LanguagePreference;
+}) {
+  return React.createElement(
+    ThemePreferenceContext.Provider,
+    { value: { initialLanguage } },
+    children,
+  );
+}
 
 export function useThemeMode() {
   const mode = React.useSyncExternalStore(
@@ -48,10 +71,11 @@ export function useAccentColor() {
 }
 
 export function useLanguagePreference() {
+  const { initialLanguage } = React.useContext(ThemePreferenceContext);
   const language = React.useSyncExternalStore(
     subscribeToLanguage,
     getLanguageSnapshot,
-    getServerLanguageSnapshot,
+    () => initialLanguage,
   );
 
   const setLanguage = React.useCallback((nextLanguage: LanguagePreference) => {
@@ -90,6 +114,7 @@ export function setLanguagePreference(language: LanguagePreference) {
   }
 
   window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+  setPreferenceCookie(LANGUAGE_STORAGE_KEY, language);
   applyLanguagePreference(language);
   window.dispatchEvent(new Event(LANGUAGE_CHANGE_EVENT));
 }
@@ -155,15 +180,11 @@ function getAccentSnapshot() {
 }
 
 function getServerAccentSnapshot(): AccentColor {
-  return "neutral";
+  return DEFAULT_ACCENT_COLOR;
 }
 
 function getLanguageSnapshot() {
   return getStoredLanguagePreference();
-}
-
-function getServerLanguageSnapshot(): LanguagePreference {
-  return "en";
 }
 
 function getStoredThemeMode(): ThemeMode {
@@ -193,7 +214,7 @@ function getStoredAccentColor(): AccentColor {
     return storedAccent;
   }
 
-  return "neutral";
+  return DEFAULT_ACCENT_COLOR;
 }
 
 function getStoredLanguagePreference(): LanguagePreference {
@@ -203,7 +224,13 @@ function getStoredLanguagePreference(): LanguagePreference {
     return storedLanguage;
   }
 
-  return "en";
+  const documentLanguage = document.documentElement.lang;
+
+  if (documentLanguage === "en" || documentLanguage === "id") {
+    return documentLanguage;
+  }
+
+  return DEFAULT_LANGUAGE_PREFERENCE;
 }
 
 function applyThemeMode(mode: ThemeMode) {
@@ -222,4 +249,8 @@ function applyAccentColor(accent: AccentColor) {
 
 function applyLanguagePreference(language: LanguagePreference) {
   document.documentElement.lang = language;
+}
+
+function setPreferenceCookie(name: string, value: string) {
+  document.cookie = `${name}=${value}; path=/; max-age=${COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
 }
