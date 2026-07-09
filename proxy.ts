@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 const publicStorageFilePattern = /\.(?:jpe?g|png|webp)$/i;
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (
