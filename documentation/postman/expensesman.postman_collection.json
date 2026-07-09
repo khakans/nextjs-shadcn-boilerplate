@@ -252,6 +252,69 @@
             },
             "description": "Redirects to Google OAuth. For browser testing, open this URL directly."
           }
+        },
+        {
+          "name": "Google OAuth Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/google/callback?code={{google_oauth_code}}&state={{google_oauth_state}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "google",
+                "callback"
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "{{google_oauth_code}}"
+                },
+                {
+                  "key": "state",
+                  "value": "{{google_oauth_state}}"
+                }
+              ]
+            },
+            "description": "OAuth callback target used by Google. Requires the state cookie created by Start Google OAuth."
+          }
+        },
+        {
+          "name": "Link Google Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/google/link",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "google",
+                "link"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "intent",
+                  "value": "{{google_link_intent}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "description": "Completes or cancels a Google account link. Use intent=cancel to cancel; leave intent empty to complete a pending link."
+          }
         }
       ]
     },
@@ -930,6 +993,469 @@
               ]
             },
             "description": "Deactivates the current account and clears auth cookies.\n\nCan be authenticated with web HttpOnly cookies or `Authorization: Bearer {{mobile_access_token}}` for mobile clients."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Companies",
+      "item": [
+        {
+          "name": "Current Company",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/companies",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "companies"
+              ]
+            },
+            "description": "Returns the singleton company record for the authenticated user."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && pm.response.text()) {",
+                  "  const json = pm.response.json();",
+                  "  const item = json.data && json.data.company;",
+                  "  if (item && item.id) pm.environment.set('company_id', item.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Save Company",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/companies",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "companies"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{company_name}}\",\n  \"email\": \"{{company_email}}\",\n  \"phone\": \"{{company_phone}}\",\n  \"logo\": \"{{company_logo}}\",\n  \"address\": \"{{company_address}}\",\n  \"timezone\": \"{{company_timezone}}\",\n  \"currency\": \"{{company_currency}}\",\n  \"taxNumber\": \"{{company_tax_number}}\",\n  \"status\": \"{{company_status}}\"\n}"
+            },
+            "description": "Creates or updates the singleton company record."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && pm.response.text()) {",
+                  "  const json = pm.response.json();",
+                  "  const item = json.data && json.data.company;",
+                  "  if (item && item.id) pm.environment.set('company_id', item.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Teams",
+      "item": [
+        {
+          "name": "List Teams",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/teams?page=1&pageSize=20&search=&status=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Lists teams with pagination, search, and optional active/inactive status filter."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const teams = json.data && Array.isArray(json.data.teams) ? json.data.teams : [];",
+                  "if (teams[0] && teams[0].id) pm.environment.set('team_id', teams[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Team",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{team_name}}\",\n  \"code\": \"{{team_code}}\",\n  \"description\": \"{{team_description}}\",\n  \"status\": \"{{team_status}}\"\n}"
+            },
+            "description": "Creates a team. Team code must be unique."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && pm.response.text()) {",
+                  "  const json = pm.response.json();",
+                  "  const item = json.data && json.data.team;",
+                  "  if (item && item.id) pm.environment.set('team_id', item.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Team Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams",
+                "{{team_id}}"
+              ]
+            },
+            "description": "Returns team detail, members, and up to 100 available users."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const data = json.data || {};",
+                  "if (data.team && data.team.id) pm.environment.set('team_id', data.team.id);",
+                  "if (Array.isArray(data.members) && data.members[0]) pm.environment.set('team_member_id', data.members[0].id);",
+                  "if (Array.isArray(data.availableUsers) && data.availableUsers[0]) pm.environment.set('team_member_user_id', data.availableUsers[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Team",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams",
+                "{{team_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{team_name}}\",\n  \"code\": \"{{team_code}}\",\n  \"description\": \"{{team_description}}\",\n  \"status\": \"{{team_status}}\"\n}"
+            },
+            "description": "Updates team fields. Team code must remain unique."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && pm.response.text()) {",
+                  "  const json = pm.response.json();",
+                  "  const item = json.data && json.data.team;",
+                  "  if (item && item.id) pm.environment.set('team_id', item.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Deactivate Team",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams",
+                "{{team_id}}"
+              ]
+            },
+            "description": "Marks a team inactive."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && pm.response.text()) {",
+                  "  const json = pm.response.json();",
+                  "  const item = json.data && json.data.team;",
+                  "  if (item && item.id) pm.environment.set('team_id', item.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Team Available Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/available-users?page=1&pageSize=20&search=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams",
+                "{{team_id}}",
+                "available-users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Lists active users that are not members of this team."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const users = json.data && Array.isArray(json.data.users) ? json.data.users : [];",
+                  "if (users[0] && users[0].id) pm.environment.set('team_member_user_id', users[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add Team Member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/members",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams",
+                "{{team_id}}",
+                "members"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{team_member_user_id}}\",\n  \"role\": \"{{team_member_role}}\",\n  \"isPrimary\": true\n}"
+            },
+            "description": "Adds an existing active user to a team."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && pm.response.text()) {",
+                  "  const json = pm.response.json();",
+                  "  const item = json.data && json.data.member;",
+                  "  if (item && item.id) pm.environment.set('team_member_id', item.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Team Member",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/members/{{team_member_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams",
+                "{{team_id}}",
+                "members",
+                "{{team_member_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"{{team_member_role}}\",\n  \"isPrimary\": true\n}"
+            },
+            "description": "Updates a team member role and primary flag."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && pm.response.text()) {",
+                  "  const json = pm.response.json();",
+                  "  const item = json.data && json.data.member;",
+                  "  if (item && item.id) pm.environment.set('team_member_id', item.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Remove Team Member",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{app_url}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/members/{{team_member_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams",
+                "{{team_id}}",
+                "members",
+                "{{team_member_id}}"
+              ]
+            },
+            "description": "Removes a member from a team."
           }
         }
       ]
