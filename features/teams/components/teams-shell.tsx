@@ -97,6 +97,7 @@ import type { AuthUser } from "@/lib/auth";
 import { getApiErrorMessage } from "@/lib/api/http-client";
 import { getMessages } from "@/lib/i18n";
 import type { PaginationMeta } from "@/lib/pagination";
+import { getStorageFileUrl } from "@/lib/storage-url";
 import { useLanguagePreference } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -1612,7 +1613,7 @@ function AvatarMark({ name, src }: { name: string; src: string | null }) {
       style={
         src
           ? {
-              backgroundImage: `url("${src}")`,
+              backgroundImage: `url("${getStorageFileUrl(src)}")`,
               backgroundPosition: "center",
               backgroundRepeat: "no-repeat",
               backgroundSize: "cover",

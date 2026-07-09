@@ -49,6 +49,7 @@ import type {
 import { useCompanies } from "@/features/companies/hooks/use-companies";
 import type { AuthUser } from "@/lib/auth";
 import { getMessages } from "@/lib/i18n";
+import { getStorageFileUrl } from "@/lib/storage-url";
 import { useLanguagePreference } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -461,7 +462,7 @@ function LogoMark({
       style={
         logo
           ? {
-              backgroundImage: `url("${logo}")`,
+              backgroundImage: `url("${getStorageFileUrl(logo)}")`,
               backgroundPosition: "center",
               backgroundRepeat: "no-repeat",
               backgroundSize: "cover",

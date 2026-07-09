@@ -3,6 +3,11 @@ import { getCurrentUserFromRequest } from "@/lib/auth";
 import { auditAction, auditTrailActions } from "@/lib/audit-trail";
 import type { CompanyStatus } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import {
+  deletePublicFile,
+  parseImageDataUrl,
+  savePublicFile,
+} from "@/lib/storage";
 
 import type { CompanyUpsertRequest } from "./request";
 
@@ -38,23 +43,61 @@ export async function saveCompanyService(
   await requireCompanyUser(request);
 
   const existingCompany = await findSingletonCompany();
-  const company = existingCompany
-    ? await auditAction(auditTrailActions.companyUpdated, () =>
-        prisma.company.update({
-          where: {
-            id: existingCompany.id,
-          },
-          data: input,
-        }),
-      )
-    : await auditAction(auditTrailActions.companyCreated, () =>
-        prisma.company.create({
-          data: input,
-        }),
-      );
+  const preparedInput = await prepareCompanyStorageInput(input);
+  let company: Awaited<ReturnType<typeof findSingletonCompany>>;
+
+  try {
+    company = existingCompany
+      ? await auditAction(auditTrailActions.companyUpdated, () =>
+          prisma.company.update({
+            where: {
+              id: existingCompany.id,
+            },
+            data: preparedInput,
+          }),
+        )
+      : await auditAction(auditTrailActions.companyCreated, () =>
+          prisma.company.create({
+            data: preparedInput,
+          }),
+        );
+  } catch (error) {
+    if (preparedInput.logo !== input.logo) {
+      await deletePublicFile(preparedInput.logo);
+    }
+
+    throw error;
+  }
+
+  if (existingCompany?.logo && existingCompany.logo !== preparedInput.logo) {
+    await deletePublicFile(existingCompany.logo);
+  }
 
   return {
     company: toCompanyItem(company),
+  };
+}
+
+async function prepareCompanyStorageInput(input: CompanyUpsertRequest) {
+  if (!input.logo?.startsWith("data:image/")) {
+    return input;
+  }
+
+  const image = parseImageDataUrl(input.logo);
+
+  if (!image) {
+    return input;
+  }
+
+  const logo = await savePublicFile({
+    buffer: image.buffer,
+    contentType: image.contentType,
+    directory: "company/logo",
+  });
+
+  return {
+    ...input,
+    logo,
   };
 }
 

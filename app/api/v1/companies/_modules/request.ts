@@ -192,6 +192,15 @@ function isValidLogoValue(value: string) {
     return true;
   }
 
+  if (
+    /^\/company\/logo\/\S+$/i.test(value) ||
+    /^\/company\/\S+$/i.test(value) ||
+    /^\/public\/\S+$/i.test(value) ||
+    /^\/storage\/\S+$/i.test(value)
+  ) {
+    return true;
+  }
+
   return /^data:image\/(jpeg|png|webp);base64,[a-z0-9+/]+=*$/i.test(value);
 }
 

@@ -33,7 +33,7 @@ const shouldMirrorToConsole =
     ? process.env.NODE_ENV !== "production"
     : process.env.LOG_TO_CONSOLE !== "false";
 
-const logDir = path.join(process.cwd(), "logs");
+const logDir = path.join(process.cwd(), "storage", "logs");
 const logFilePrefix = "app";
 const maxLogDays = 10;
 
