@@ -11,8 +11,12 @@ import { mkdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
-export const storageRoot = path.join(process.cwd(), "storage");
-export const publicStorageRoot = path.join(storageRoot, "public");
+export const storageRoot = path.join(/*turbopackIgnore: true*/ process.cwd(), "storage");
+export const publicStorageRoot = path.join(
+  /*turbopackIgnore: true*/ process.cwd(),
+  "storage",
+  "public",
+);
 
 type StorageDriver = "local" | "minio" | "s3";
 
@@ -58,10 +62,13 @@ export async function savePublicFile(input: {
   if (getStorageDriver() === "local") {
     const absoluteDirectory = path.join(publicStorageRoot, safeDirectory);
 
-    await mkdir(absoluteDirectory, {
+    await mkdir(/*turbopackIgnore: true*/ absoluteDirectory, {
       recursive: true,
     });
-    await writeFile(path.join(absoluteDirectory, fileName), input.buffer);
+    await writeFile(
+      /*turbopackIgnore: true*/ path.join(absoluteDirectory, fileName),
+      input.buffer,
+    );
   } else {
     const { bucket } = getS3StorageConfig();
 
@@ -103,11 +110,13 @@ export async function deletePublicFile(publicUrl: string | null | undefined) {
     return;
   }
 
-  await unlink(absolutePath).catch((error: NodeJS.ErrnoException) => {
-    if (error.code !== "ENOENT") {
-      throw error;
-    }
-  });
+  await unlink(/*turbopackIgnore: true*/ absolutePath).catch(
+    (error: NodeJS.ErrnoException) => {
+      if (error.code !== "ENOENT") {
+        throw error;
+      }
+    },
+  );
 }
 
 export async function readPublicFile(relativePath: string) {
@@ -152,13 +161,15 @@ export async function readPublicFile(relativePath: string) {
     return null;
   }
 
-  const fileStat = await stat(absolutePath).catch(() => null);
+  const fileStat = await stat(/*turbopackIgnore: true*/ absolutePath).catch(
+    () => null,
+  );
 
   if (!fileStat?.isFile()) {
     return null;
   }
 
-  const buffer = await readFile(absolutePath);
+  const buffer = await readFile(/*turbopackIgnore: true*/ absolutePath);
   const extension = path.extname(absolutePath).slice(1).toLowerCase();
 
   return {
@@ -205,10 +216,16 @@ function resolvePublicStoragePath(relativePath: string) {
     return null;
   }
 
-  const absolutePath = path.resolve(publicStorageRoot, normalizedRelativePath);
-  const publicRoot = path.resolve(publicStorageRoot);
+  const publicRoot = publicStorageRoot;
+  const absolutePath = path.join(
+    publicRoot,
+    ...normalizedRelativePath.split("/"),
+  );
+  const relativeFromPublicRoot = path.relative(publicRoot, absolutePath);
 
-  return absolutePath.startsWith(`${publicRoot}${path.sep}`)
+  return relativeFromPublicRoot &&
+    !relativeFromPublicRoot.startsWith("..") &&
+    !path.isAbsolute(relativeFromPublicRoot)
     ? absolutePath
     : null;
 }

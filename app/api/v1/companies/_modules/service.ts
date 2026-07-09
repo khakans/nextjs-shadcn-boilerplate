@@ -79,14 +79,35 @@ export async function saveCompanyService(
 }
 
 async function prepareCompanyStorageInput(input: CompanyUpsertRequest) {
+  if (input.logoFile) {
+    const buffer = Buffer.from(await input.logoFile.arrayBuffer());
+    const logo = await savePublicFile({
+      buffer,
+      contentType: input.logoFile.type,
+      directory: "company/logo",
+    });
+
+    return {
+      ...input,
+      logo,
+      logoFile: undefined,
+    };
+  }
+
   if (!input.logo?.startsWith("data:image/")) {
-    return input;
+    return {
+      ...input,
+      logoFile: undefined,
+    };
   }
 
   const image = parseImageDataUrl(input.logo);
 
   if (!image) {
-    return input;
+    return {
+      ...input,
+      logoFile: undefined,
+    };
   }
 
   const logo = await savePublicFile({
@@ -98,6 +119,7 @@ async function prepareCompanyStorageInput(input: CompanyUpsertRequest) {
   return {
     ...input,
     logo,
+    logoFile: undefined,
   };
 }
 

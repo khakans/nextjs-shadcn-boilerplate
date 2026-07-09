@@ -998,7 +998,7 @@
       ]
     },
     {
-      "name": "Companies",
+      "name": "Company",
       "item": [
         {
           "name": "Current Company",
@@ -1006,12 +1006,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/companies",
+              "raw": "{{base_url}}/company",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "companies"
+                "company"
               ]
             },
             "description": "Returns the singleton company record for the authenticated user."
@@ -1040,24 +1040,71 @@
               {
                 "key": "Origin",
                 "value": "{{app_url}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/companies",
+              "raw": "{{base_url}}/company",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "companies"
+                "company"
               ]
             },
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"{{company_name}}\",\n  \"email\": \"{{company_email}}\",\n  \"phone\": \"{{company_phone}}\",\n  \"logo\": \"{{company_logo}}\",\n  \"address\": \"{{company_address}}\",\n  \"timezone\": \"{{company_timezone}}\",\n  \"currency\": \"{{company_currency}}\",\n  \"taxNumber\": \"{{company_tax_number}}\",\n  \"status\": \"{{company_status}}\"\n}"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "{{company_name}}",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "{{company_email}}",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "{{company_phone}}",
+                  "type": "text"
+                },
+                {
+                  "key": "logo",
+                  "value": "{{company_logo}}",
+                  "type": "text"
+                },
+                {
+                  "key": "logoFile",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "address",
+                  "value": "{{company_address}}",
+                  "type": "text"
+                },
+                {
+                  "key": "timezone",
+                  "value": "{{company_timezone}}",
+                  "type": "text"
+                },
+                {
+                  "key": "currency",
+                  "value": "{{company_currency}}",
+                  "type": "text"
+                },
+                {
+                  "key": "taxNumber",
+                  "value": "{{company_tax_number}}",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "{{company_status}}",
+                  "type": "text"
+                }
+              ]
             },
             "description": "Creates or updates the singleton company record."
           },

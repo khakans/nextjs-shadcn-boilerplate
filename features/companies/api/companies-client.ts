@@ -22,6 +22,7 @@ export type CompanyInput = {
   email: string | null;
   phone: string | null;
   logo: string | null;
+  logoFile?: File | null;
   address: string | null;
   timezone: string;
   currency: string;
@@ -34,15 +35,36 @@ type CompanyResponse = {
 };
 
 export function getCompany() {
-  return apiRequest<CompanyResponse>("/companies");
+  return apiRequest<CompanyResponse>("/company");
 }
 
 export function saveCompany(input: CompanyInput) {
-  return apiRequest<CompanyResponse>("/companies", {
+  const formData = new FormData();
+
+  appendNullableFormValue(formData, "address", input.address);
+  appendNullableFormValue(formData, "email", input.email);
+  appendNullableFormValue(formData, "logo", input.logo);
+  appendNullableFormValue(formData, "phone", input.phone);
+  appendNullableFormValue(formData, "taxNumber", input.taxNumber);
+  formData.append("currency", input.currency);
+  formData.append("name", input.name);
+  formData.append("status", input.status);
+  formData.append("timezone", input.timezone);
+
+  if (input.logoFile) {
+    formData.append("logoFile", input.logoFile);
+  }
+
+  return apiRequest<CompanyResponse>("/company", {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(input),
+    body: formData,
   });
+}
+
+function appendNullableFormValue(
+  formData: FormData,
+  key: string,
+  value: string | null,
+) {
+  formData.append(key, value ?? "");
 }

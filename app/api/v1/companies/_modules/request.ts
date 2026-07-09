@@ -5,6 +5,7 @@ export type CompanyUpsertRequest = {
   email: string | null;
   phone: string | null;
   logo: string | null;
+  logoFile?: File | null;
   address: string | null;
   timezone: string;
   currency: string;
@@ -24,9 +25,21 @@ type RequestParseResult<T> =
 
 const allowedCompanyStatuses = new Set<CompanyStatus>(["ACTIVE", "INACTIVE"]);
 const maxLogoLength = 7 * 1024 * 1024;
+const maxLogoSize = 5 * 1024 * 1024;
+const allowedLogoTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export async function readJsonBody(request: Request) {
   return request.json().catch(() => null);
+}
+
+export async function readCompanyBody(request: Request) {
+  const contentType = request.headers.get("content-type") ?? "";
+
+  if (contentType.includes("multipart/form-data")) {
+    return request.formData().catch(() => null);
+  }
+
+  return readJsonBody(request);
 }
 
 export function parseCompanyRequest(
@@ -43,6 +56,7 @@ export function parseCompanyRequest(
   const email = normalizeOptionalString(getNullableStringProperty(body, "email"));
   const phone = normalizeOptionalString(getNullableStringProperty(body, "phone"));
   const logo = normalizeOptionalString(getNullableStringProperty(body, "logo"));
+  const logoFile = getFileProperty(body, "logoFile");
   const address = normalizeOptionalString(
     getNullableStringProperty(body, "address"),
   );
@@ -96,6 +110,20 @@ export function parseCompanyRequest(
     };
   }
 
+  if (logoFile && !allowedLogoTypes.has(logoFile.type)) {
+    return {
+      ok: false,
+      error: "Company logo must be a JPG, PNG, or WEBP image.",
+    };
+  }
+
+  if (logoFile && logoFile.size > maxLogoSize) {
+    return {
+      ok: false,
+      error: "Company logo must be 5 MB or smaller.",
+    };
+  }
+
   if (address && address.length > 1000) {
     return {
       ok: false,
@@ -138,6 +166,7 @@ export function parseCompanyRequest(
       email,
       phone,
       logo,
+      logoFile,
       address,
       timezone,
       currency: normalizedCurrency,
@@ -148,6 +177,12 @@ export function parseCompanyRequest(
 }
 
 function getStringProperty(body: unknown, property: string): string | null {
+  if (body instanceof FormData) {
+    const value = body.get(property);
+
+    return typeof value === "string" ? value : null;
+  }
+
   if (!body || typeof body !== "object") {
     return null;
   }
@@ -158,6 +193,16 @@ function getStringProperty(body: unknown, property: string): string | null {
 }
 
 function getNullableStringProperty(body: unknown, property: string) {
+  if (body instanceof FormData) {
+    const value = body.get(property);
+
+    if (value === null) {
+      return null;
+    }
+
+    return typeof value === "string" ? value : null;
+  }
+
   if (!body || typeof body !== "object") {
     return null;
   }
@@ -169,6 +214,16 @@ function getNullableStringProperty(body: unknown, property: string) {
   }
 
   return typeof value === "string" ? value : null;
+}
+
+function getFileProperty(body: unknown, property: string) {
+  if (!(body instanceof FormData)) {
+    return null;
+  }
+
+  const value = body.get(property);
+
+  return value instanceof File && value.size > 0 ? value : null;
 }
 
 function normalizeRequiredString(value: string | null) {

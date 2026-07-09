@@ -5,7 +5,7 @@ import {
   assertGlobalApiRateLimit,
 } from "@/lib/auth/rate-limit";
 
-import { parseCompanyRequest, readJsonBody } from "./request";
+import { parseCompanyRequest, readCompanyBody } from "./request";
 import {
   getCompanyService,
   saveCompanyService,
@@ -22,9 +22,9 @@ export async function getCompanyController(request: Request) {
 export async function saveCompanyController(request: Request) {
   assertSameOriginOrBearerRequest(request);
   assertGlobalApiRateLimit(request);
-  assertApiRateLimit(request, "companies:mutation");
+  assertApiRateLimit(request, "company:mutation");
 
-  const body = await readJsonBody(request);
+  const body = await readCompanyBody(request);
   const parsed = parseCompanyRequest(body);
 
   if (!parsed.ok) {

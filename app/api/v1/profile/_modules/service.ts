@@ -16,7 +16,6 @@ import {
 import type { IssuedAuthTokens } from "@/lib/auth/session";
 import { auditAction, auditTrailActions } from "@/lib/audit-trail";
 import { prisma } from "@/lib/prisma";
-import { deletePublicFile, savePublicFile } from "@/lib/storage";
 
 import type {
   AvatarRequest,
@@ -132,6 +131,7 @@ export async function updateAvatarService(
   request?: Request,
 ) {
   const user = await requireProfileUser(request);
+  const { deletePublicFile, savePublicFile } = await import("@/lib/storage");
   const buffer = Buffer.from(await input.avatar.arrayBuffer());
   const avatarUrl = await savePublicFile({
     buffer,
@@ -170,6 +170,7 @@ export async function updateAvatarService(
 
 export async function deleteAvatarService(request?: Request) {
   const user = await requireProfileUser(request);
+  const { deletePublicFile } = await import("@/lib/storage");
   const updatedUser = await auditAction(auditTrailActions.avatarUpdated, () =>
     prisma.user.update({
       where: {

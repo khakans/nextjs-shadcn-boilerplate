@@ -161,6 +161,7 @@ function CompanyForm({
 }) {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [logo, setLogo] = React.useState<string | null>(company?.logo ?? null);
+  const [logoFile, setLogoFile] = React.useState<File | null>(null);
   const [logoError, setLogoError] = React.useState<string | null>(null);
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(getCompanySchema(t)),
@@ -181,11 +182,20 @@ function CompanyForm({
   React.useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       setLogo(companyLogo);
+      setLogoFile(null);
       setLogoError(null);
     });
 
     return () => window.cancelAnimationFrame(frame);
   }, [companyLogo]);
+
+  React.useEffect(() => {
+    if (!logo?.startsWith("blob:")) {
+      return;
+    }
+
+    return () => URL.revokeObjectURL(logo);
+  }, [logo]);
 
   async function handleLogoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.currentTarget.files?.[0];
@@ -208,7 +218,14 @@ function CompanyForm({
       return;
     }
 
-    setLogo(await readFileAsDataUrl(file, t.companyLogoReadFailed));
+    setLogoFile(file);
+    setLogo((currentLogo) => {
+      if (currentLogo?.startsWith("blob:")) {
+        URL.revokeObjectURL(currentLogo);
+      }
+
+      return URL.createObjectURL(file);
+    });
     event.currentTarget.value = "";
   }
 
@@ -217,7 +234,8 @@ function CompanyForm({
       address: values.address.trim() || null,
       currency: values.currency.trim().toUpperCase(),
       email: values.email.trim() || null,
-      logo,
+      logo: logoFile ? companyLogo : logo,
+      logoFile,
       name: values.name.trim(),
       phone: values.phone.trim() || null,
       status: company?.status ?? "ACTIVE",
@@ -267,7 +285,16 @@ function CompanyForm({
                   type="button"
                   variant="ghost"
                   disabled={!logo}
-                  onClick={() => setLogo(null)}
+                  onClick={() => {
+                    setLogo((currentLogo) => {
+                      if (currentLogo?.startsWith("blob:")) {
+                        URL.revokeObjectURL(currentLogo);
+                      }
+
+                      return null;
+                    });
+                    setLogoFile(null);
+                  }}
                 >
                   <XIcon />
                   {t.remove}
@@ -545,20 +572,4 @@ function getCompanyDefaultValues(company: Company | null): CompanyFormValues {
     taxNumber: company?.taxNumber ?? "",
     timezone: company?.timezone ?? "Asia/Jakarta",
   };
-}
-
-function readFileAsDataUrl(file: File, errorMessage: string) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.addEventListener("load", () => {
-      if (typeof reader.result === "string") {
-        resolve(reader.result);
-      } else {
-        reject(new Error(errorMessage));
-      }
-    });
-    reader.addEventListener("error", () => reject(reader.error));
-    reader.readAsDataURL(file);
-  });
 }
