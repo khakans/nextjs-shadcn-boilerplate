@@ -1,5 +1,8 @@
 import { ApiError } from "@/lib/api-response";
 
+export const emailDomainNotAllowedMessage =
+  "Email domain is not allowed for registration.";
+
 export function assertAllowedUserEmailDomain(email: string) {
   const allowedDomains = getAllowedUserDomains();
 
@@ -10,7 +13,7 @@ export function assertAllowedUserEmailDomain(email: string) {
   const domain = getEmailDomain(email);
 
   if (!domain || !allowedDomains.includes(domain)) {
-    throw new ApiError("Email domain is not allowed for registration.", 403);
+    throw new ApiError(emailDomainNotAllowedMessage, 403);
   }
 }
 

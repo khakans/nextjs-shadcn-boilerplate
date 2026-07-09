@@ -7,6 +7,7 @@ import {
   authenticateGoogleOAuth,
   setGoogleLinkRequestCookie,
 } from "@/lib/auth/google";
+import { emailDomainNotAllowedMessage } from "@/lib/auth/email-domain";
 import {
   GOOGLE_OAUTH_STATE_COOKIE_NAME,
   getAppBaseUrl,
@@ -60,12 +61,14 @@ async function googleCallbackRoute(request: Request) {
 
 export const GET = withApiMiddleware(googleCallbackRoute, {
   onApiError(error, request) {
-    if (error.status === 401) {
+    if (error.message === emailDomainNotAllowedMessage) {
       return NextResponse.redirect(
-        new URL("/login?authError=google", getAppBaseUrl(request.url)),
+        new URL("/login?authError=domain", getAppBaseUrl(request.url)),
       );
     }
 
-    return undefined;
+    return NextResponse.redirect(
+      new URL("/login?authError=google", getAppBaseUrl(request.url)),
+    );
   },
 });

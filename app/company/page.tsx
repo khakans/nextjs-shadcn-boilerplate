@@ -1,7 +1,7 @@
 import { CompaniesShell } from "@/features/companies/components/companies-shell";
 import { requireCurrentUser } from "@/lib/auth";
 
-export default async function CompaniesPage() {
+export default async function CompanyPage() {
   const user = await requireCurrentUser();
 
   return <CompaniesShell user={user} />;

@@ -105,7 +105,7 @@ export function CompaniesShell({ user }: { user: AuthUser }) {
               orientation="vertical"
               className="mr-2 data-vertical:h-4 data-vertical:self-auto"
             />
-            <PageBreadcrumb items={[{ label: t.companies }]} />
+            <PageBreadcrumb items={[{ label: t.company }]} />
           </div>
           <div className="ml-auto px-4">
             <LanguageSwitcher />
@@ -243,7 +243,7 @@ function CompanyForm({
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <LogoMark
                 logo={logo}
-                name={form.getValues("name") || company?.name || t.companies}
+                name={form.getValues("name") || company?.name || t.company}
                 className="size-16 text-lg"
               />
               <div className="flex flex-wrap gap-2">
@@ -400,7 +400,7 @@ function CompanySummary({ company, t }: { company: Company | null; t: Messages }
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="flex items-center gap-3">
-            <LogoMark logo={company?.logo ?? null} name={company?.name ?? t.companies} />
+            <LogoMark logo={company?.logo ?? null} name={company?.name ?? t.company} />
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">
                 {company?.name ?? t.companyNotConfigured}

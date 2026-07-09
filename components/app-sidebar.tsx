@@ -17,7 +17,17 @@ import {
 import type { AuthUser } from "@/lib/auth"
 import { getMessages } from "@/lib/i18n"
 import { useLanguagePreference } from "@/lib/theme"
-import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, Settings2Icon, FrameIcon, PieChartIcon, MapIcon, LayoutDashboardIcon } from "lucide-react"
+import {
+  AudioLinesIcon,
+  FrameIcon,
+  GalleryVerticalEndIcon,
+  LayoutDashboardIcon,
+  MapIcon,
+  PieChartIcon,
+  ReceiptTextIcon,
+  Settings2Icon,
+  TerminalIcon,
+} from "lucide-react"
 
 export function AppSidebar({
   user,
@@ -67,18 +77,47 @@ export function AppSidebar({
         isActive: isActivePath(pathname, "/dashboard") || pathname === "/",
       },
       {
+        title: t.expenseSetup,
+        url: "#",
+        icon: (
+          <ReceiptTextIcon
+          />
+        ),
+        isActive:
+          isActivePath(pathname, "/categories") ||
+          isActivePath(pathname, "/currency") ||
+          isActivePath(pathname, "/payment-methods"),
+        items: [
+          {
+            isActive: isActivePath(pathname, "/categories"),
+            title: t.categories,
+            url: "/categories",
+          },
+          {
+            isActive: isActivePath(pathname, "/currency"),
+            title: t.currency,
+            url: "/currency",
+          },
+          {
+            isActive: isActivePath(pathname, "/payment-methods"),
+            title: t.paymentMethods,
+            url: "/payment-methods",
+          },
+        ],
+      },
+      {
         title: t.settings,
         url: "#",
         icon: (
           <Settings2Icon
           />
         ),
-        isActive: isActivePath(pathname, "/companies") || isActivePath(pathname, "/teams"),
+        isActive: isActivePath(pathname, "/company") || isActivePath(pathname, "/teams"),
         items: [
           {
-            isActive: isActivePath(pathname, "/companies"),
-            title: t.companies,
-            url: "/companies",
+            isActive: isActivePath(pathname, "/company"),
+            title: t.company,
+            url: "/company",
           },
           {
             isActive: isActivePath(pathname, "/teams"),

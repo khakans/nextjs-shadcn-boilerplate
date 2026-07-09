@@ -19,13 +19,14 @@ export function useLoginForm({ authError }: UseLoginFormOptions) {
   const t = getMessages(language);
   const [error, setError] = React.useState<string | null>(null);
   const [isPending, setIsPending] = React.useState(false);
-  const displayError = error ?? (authError === "google" ? t.loginGoogleError : null);
+  const authErrorMessage = getAuthErrorMessage(authError, t);
+  const displayError = error ?? authErrorMessage;
 
   React.useEffect(() => {
-    if (authError === "google") {
-      toast.error(t.loginGoogleError);
+    if (authErrorMessage) {
+      toast.error(authErrorMessage);
     }
-  }, [authError, t.loginGoogleError]);
+  }, [authErrorMessage]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -56,4 +57,19 @@ export function useLoginForm({ authError }: UseLoginFormOptions) {
     isPending,
     t,
   };
+}
+
+function getAuthErrorMessage(
+  authError: string | undefined,
+  t: ReturnType<typeof getMessages>,
+) {
+  if (authError === "domain") {
+    return t.loginGoogleDomainError;
+  }
+
+  if (authError === "google") {
+    return t.loginGoogleError;
+  }
+
+  return null;
 }

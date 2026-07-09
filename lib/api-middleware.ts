@@ -44,7 +44,7 @@ export function withApiMiddleware<TArgs extends unknown[]>(
           if (error instanceof ApiError) {
             const response =
               (await options.onApiError?.(error, request)) ??
-              apiError(error.message, error.status);
+              createErrorResponse(error.message, error.status, request, requestId);
             const level = error.status >= 500 ? "error" : "warn";
 
             setRequestIdHeader(response, requestId);
@@ -61,11 +61,50 @@ export function withApiMiddleware<TArgs extends unknown[]>(
             request: getRequestContext(request, undefined, startedAt, requestId),
           });
 
-          throw error;
+          const response = createErrorResponse(
+            "Internal server error.",
+            500,
+            request,
+            requestId,
+          );
+
+          setRequestIdHeader(response, requestId);
+          logRequest("error", request, response.status, startedAt, requestId, {
+            error,
+          });
+
+          return response;
         }
       },
     );
   };
+}
+
+function createErrorResponse(
+  message: string,
+  status: number,
+  request: Request,
+  requestId: string,
+) {
+  if (status >= 500 && wantsBrowserErrorPage(request)) {
+    const url = new URL("/server-error", request.url);
+    url.searchParams.set("requestId", requestId);
+
+    return Response.redirect(url, 303);
+  }
+
+  return apiError(status >= 500 ? "Internal server error." : message, status);
+}
+
+function wantsBrowserErrorPage(request: Request) {
+  if (request.method.toUpperCase() !== "GET") {
+    return false;
+  }
+
+  const accept = request.headers.get("accept") ?? "";
+  const fetchMode = request.headers.get("sec-fetch-mode");
+
+  return fetchMode === "navigate" || accept.includes("text/html");
 }
 
 function logRequest(

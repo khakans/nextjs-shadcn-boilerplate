@@ -38,6 +38,10 @@ export const messages = {
     changedFields: "Changed fields",
     close: "Close",
     cancel: "Cancel",
+    categories: "Categories",
+    categoriesDescription:
+      "Prepare expense categories for transaction grouping and reports.",
+    company: "Company",
     companies: "Companies",
     companyAddress: "Address",
     companyBillingAddressPlaceholder: "Company billing address",
@@ -77,6 +81,8 @@ export const messages = {
     companyUpdateDescription:
       "Update company identity, tax, and operating defaults.",
     currency: "Currency",
+    currencyDescription:
+      "Prepare currencies used for expenses, reimbursements, and reporting.",
     confirm: "Confirm",
     confirmPasswordChange: "Confirm password change",
     confirmPasswordChangeDescription:
@@ -143,6 +149,7 @@ export const messages = {
     genderPreferNotToSay: "Prefer not to say",
     genderUnspecified: "Not specified",
     getStarted: "Get Started",
+    goHome: "Go home",
     history: "History",
     indonesia: "Indonesia",
     introduction: "Introduction",
@@ -161,6 +168,8 @@ export const messages = {
     loginAt: "Login",
     loginDescription: "Enter your email or username below to login to your account",
     loginFailed: "Unable to login.",
+    loginGoogleDomainError:
+      "This Google email domain is not allowed for this workspace.",
     loginGoogleError: "Unable to continue with Google.",
     loginPending: "Logging in...",
     loginTitle: "Login to your account",
@@ -182,6 +191,9 @@ export const messages = {
     orange: "Orange",
     orContinueWith: "Or continue with",
     password: "Password",
+    paymentMethods: "Payment Methods",
+    paymentMethodsDescription:
+      "Prepare payment methods used when recording expense transactions.",
     passwordChanged: "Password updated successfully.",
     passwordChangeFailed: "Unable to update password.",
     passwordConfirmationMismatch: "Password confirmation does not match.",
@@ -208,6 +220,7 @@ export const messages = {
     unableToLoadProfile: "Unable to load profile",
     profileLoadFailed: "Failed to load profile.",
     retry: "Retry",
+    requestIdLabel: "Request ID",
     profilePhotoTitle: "Profile photo",
     profilePhotoDescription:
       "Upload a clear photo so your account is easier to recognize.",
@@ -332,6 +345,9 @@ export const messages = {
     settings: "Settings",
     sendResetLink: "Send reset link",
     sendResetLinkPending: "Sending...",
+    serverErrorDescription:
+      "The request could not be completed. Please try again or return to the dashboard.",
+    serverErrorTitle: "Something went wrong",
     sessionLoggedOut: "Device logged out.",
     sessionLogoutFailed: "Unable to log out this device.",
     sessionLogoutPending: "Logging out...",
@@ -353,6 +369,7 @@ export const messages = {
     event: "Event",
     entity: "Entity",
     eventTime: "Event time",
+    expenseSetup: "Expense Setup",
     sourceIp: "Source IP",
     system: "System",
     teams: "Teams",
@@ -461,6 +478,7 @@ export const messages = {
     theme: "Theme",
     tutorials: "Tutorials",
     thisDevice: "This device",
+    tryAgain: "Try again",
     userId: "User ID",
     username: "Username",
     usernameChanged: "Username updated successfully.",
@@ -516,6 +534,10 @@ export const messages = {
     changedFields: "Field berubah",
     close: "Tutup",
     cancel: "Batal",
+    categories: "Kategori",
+    categoriesDescription:
+      "Siapkan kategori expense untuk pengelompokan transaksi dan laporan.",
+    company: "Perusahaan",
     companies: "Perusahaan",
     companyAddress: "Alamat",
     companyBillingAddressPlaceholder: "Alamat penagihan perusahaan",
@@ -555,6 +577,8 @@ export const messages = {
     companyUpdateDescription:
       "Perbarui identitas perusahaan, pajak, dan default operasional.",
     currency: "Mata uang",
+    currencyDescription:
+      "Siapkan mata uang yang dipakai untuk expense, reimbursement, dan laporan.",
     confirm: "Konfirmasi",
     confirmPasswordChange: "Konfirmasi perubahan password",
     confirmPasswordChangeDescription:
@@ -621,6 +645,7 @@ export const messages = {
     genderPreferNotToSay: "Tidak ingin menyebutkan",
     genderUnspecified: "Belum diatur",
     getStarted: "Mulai",
+    goHome: "Ke beranda",
     history: "Riwayat",
     indonesia: "Indonesia",
     introduction: "Pengantar",
@@ -639,6 +664,8 @@ export const messages = {
     loginAt: "Login",
     loginDescription: "Masukkan email atau username untuk login ke akun Anda",
     loginFailed: "Gagal login.",
+    loginGoogleDomainError:
+      "Domain email Google ini tidak diizinkan untuk workspace ini.",
     loginGoogleError: "Gagal melanjutkan dengan Google.",
     loginPending: "Memproses login...",
     loginTitle: "Login ke akun Anda",
@@ -660,6 +687,9 @@ export const messages = {
     orange: "Oranye",
     orContinueWith: "Atau lanjutkan dengan",
     password: "Password",
+    paymentMethods: "Metode Pembayaran",
+    paymentMethodsDescription:
+      "Siapkan metode pembayaran yang dipakai saat mencatat transaksi expense.",
     passwordChanged: "Password berhasil diubah.",
     passwordChangeFailed: "Password gagal diubah.",
     passwordConfirmationMismatch: "Konfirmasi password tidak cocok.",
@@ -685,6 +715,7 @@ export const messages = {
     unableToLoadProfile: "Tidak dapat memuat profil",
     profileLoadFailed: "Gagal memuat profil.",
     retry: "Coba lagi",
+    requestIdLabel: "Request ID",
     profilePhotoTitle: "Foto profil",
     profilePhotoDescription:
       "Unggah foto yang jelas agar akun Anda lebih mudah dikenali.",
@@ -809,6 +840,9 @@ export const messages = {
     settings: "Pengaturan",
     sendResetLink: "Kirim link reset",
     sendResetLinkPending: "Mengirim...",
+    serverErrorDescription:
+      "Request tidak dapat diselesaikan. Coba lagi atau kembali ke dashboard.",
+    serverErrorTitle: "Terjadi kesalahan",
     sessionLoggedOut: "Perangkat berhasil dikeluarkan.",
     sessionLogoutFailed: "Gagal mengeluarkan perangkat ini.",
     sessionLogoutPending: "Mengeluarkan...",
@@ -830,6 +864,7 @@ export const messages = {
     event: "Event",
     entity: "Entitas",
     eventTime: "Waktu event",
+    expenseSetup: "Expense Setup",
     sourceIp: "IP sumber",
     system: "Sistem",
     teams: "Tim",
@@ -938,6 +973,7 @@ export const messages = {
     theme: "Tema",
     tutorials: "Tutorial",
     thisDevice: "Perangkat ini",
+    tryAgain: "Coba lagi",
     userId: "User ID",
     username: "Username",
     usernameChanged: "Username berhasil diubah.",

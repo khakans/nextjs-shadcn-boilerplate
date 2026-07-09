@@ -1451,20 +1451,40 @@ function TeamMemberTableRow({
         </div>
       </td>
       <td className="px-3 py-3 align-top">
-        <select
-          value={member.role === "manager" ? "manager" : "member"}
-          onChange={(event) =>
-            onUpdate({
-              role: event.target.value as TeamMemberRole,
-              isPrimary: member.isPrimary,
-            })
-          }
-          className="h-8 w-32 rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-          disabled={disabled}
-        >
-          <option value="member">member</option>
-          <option value="manager">manager</option>
-        </select>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-32 justify-between"
+                disabled={disabled}
+              />
+            }
+          >
+            {member.role === "manager" ? "manager" : "member"}
+            <ChevronDownIcon data-icon="inline-end" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-32">
+            <DropdownMenuRadioGroup
+              value={member.role === "manager" ? "manager" : "member"}
+              onValueChange={(value) =>
+                onUpdate({
+                  role: value as TeamMemberRole,
+                  isPrimary: member.isPrimary,
+                })
+              }
+            >
+              <DropdownMenuRadioItem value="member">
+                member
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="manager">
+                manager
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </td>
       <td className="px-3 py-3 align-top">
         <Switch
